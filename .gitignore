@@ -3,6 +3,8 @@
 _build/
 data/
 temp/
+output/
+models/
 
 # Ignore file types that may contain data or models
 *.p
