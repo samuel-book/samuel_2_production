@@ -45,6 +45,7 @@ class DataLoad:
 
         self.load_data()
 
+    
     def load_data(self):
         """
         Load data and create datasets
