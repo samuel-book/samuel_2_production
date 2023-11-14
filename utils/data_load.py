@@ -1,6 +1,7 @@
 import pandas as pd
 
 class DataLoad:
+    
     """
     Loads data ready for models.
 
@@ -19,6 +20,9 @@ class DataLoad:
         Creates the data load object
         """
 
+        # Default to limit to ambulance arrivals
+        self.limit_to_ambo = True
+
         self.thrombolysis_choice_fields = [
             'arrival_to_scan_time',
             'infarction',
@@ -29,6 +33,18 @@ class DataLoad:
             'afib_anticoagulant',
             'onset_to_arrival_time',
             'onset_during_sleep',
+            'age',
+            'thrombolysis'
+        ]
+
+        self.thrombolysis_outcome_fields = [
+            'arrival_to_scan_time',
+            'infarction',
+            'stroke_severity',
+            'prior_disability',
+            'stroke_team',
+            'afib_anticoagulant',
+            'onset_to_arrival_time',
             'age'
         ]
         
@@ -42,7 +58,6 @@ class DataLoad:
             setattr(self, key, kwargs[key])
 
         # Load stored data
-
         self.load_data()
 
     
