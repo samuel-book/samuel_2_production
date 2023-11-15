@@ -65,6 +65,7 @@ class DataProcess:
         mask = ((self.full_data['year'] >= self.year_min) &
                 (self.full_data['year'] <= self.year_max))
         self.full_data = self.full_data[mask]
+        
 
     def create_ml_data(self):
         """
@@ -118,7 +119,8 @@ class DataProcess:
         self.ml_data = self.ml_data[self.machine_learning_fields]
 
         # Shuffle data
-        self.ml_data = self.ml_data.sample(frac=1, random_state=42).reset_index(drop=True)
+        self.ml_data = self.ml_data.sample(
+            frac=1, random_state=42).reset_index(drop=True)
 
         # Save complete data
         self.ml_data.to_csv('./data/data_for_ml/complete_ml_data.csv', index=False)

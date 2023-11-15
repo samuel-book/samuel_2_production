@@ -22,6 +22,8 @@ class ThrombolysisChoiceModel:
     
     def __init__(self):
         """
+        Load data for modelling, split into X and y, and one-hot encode stroke
+        team.
         """
 
         # Load data
@@ -61,6 +63,7 @@ class ThrombolysisChoiceModel:
         self.X_test_one_hot = pd.concat([self.X_test, X_test_hosp], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
 
+
     def get_shap(self):
         # Load model
         filename = './models/thrombolysis_choice.p'
@@ -77,7 +80,23 @@ class ThrombolysisChoiceModel:
         teams = [hosp for hosp in list(self.X_train_one_hot) if hosp[0:4]=='team']
         self.shap_values_df['hopsital'] = self.shap_values_df[teams].sum(axis=1)
         for team in teams:
-            self.shap_values_df.drop(team, axis=1, inplace=True)   
+            self.shap_values_df.drop(team, axis=1, inplace=True)
+        
+        # Add base value and reorder DataFrame to put base value first
+        cols = list(self.shap_values_df)
+        self.shap_values_df['base'] = self.shap_values_extended.base_values[0]
+        cols.insert(0, 'base')
+        self.shap_values_df = self.shap_values_df[cols]
+
+        # Add total SHAP
+        self.shap_values_df['total'] = self.shap_values_df.sum(axis=1)
+
+        # Add probability
+        odds = np.exp(self.shap_values_df['total'] ) 
+        self.shap_values_df['probability'] = odds / (1 + odds)
+
+        # Save
+        self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
     
     def train_model(self):
 
@@ -89,21 +108,21 @@ class ThrombolysisChoiceModel:
         with open(filename, 'wb') as filehandler:
             pickle.dump(model, filehandler)
         # Get predictions for test set
-        y_pred_proba = model.predict_proba(self.X_test_one_hot)[:, 1]
-        y_pred = y_pred_proba >= 0.5
+        self.y_pred_proba = model.predict_proba(self.X_test_one_hot)[:, 1]
+        self.y_pred = self.y_pred_proba >= 0.5
         y_pred_proba_df = pd.DataFrame()
-        y_pred_proba_df['probability'] = y_pred_proba
+        y_pred_proba_df['probability'] = self.y_pred_proba
         y_pred_proba_df.to_csv('./output/thrombolysis_choice_test_predictions.csv')
         # Get accuracy of test set
-        accuracy = metrics.accuracy_score(self.y_test, y_pred)
+        accuracy = metrics.accuracy_score(self.y_test, self.y_pred)
         print(f'Accuracy: {accuracy:0.3f}')
-        balanced_accuracy = metrics.balanced_accuracy_score(self.y_test, y_pred)
+        balanced_accuracy = metrics.balanced_accuracy_score(self.y_test, self.y_pred)
         print(f'Balanced accuracy: {balanced_accuracy:0.3f}')
-        fpr, tpr, thresholds = roc_curve(self.y_test, y_pred_proba)
+        fpr, tpr, thresholds = roc_curve(self.y_test, self.y_pred_proba)
         roc_auc = auc(fpr, tpr)
         print(f'ROC AUC: {roc_auc:0.3f}')
         print(f'Actual thrombolysis: {np.mean(self.y_test):0.3f}')
-        print(f'Predicted thrombolysis: {np.mean(y_pred):0.3f}')
+        print(f'Predicted thrombolysis: {np.mean(self.y_pred):0.3f}')
 
 
 
