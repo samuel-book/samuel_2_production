@@ -16,10 +16,7 @@ class ThrombolysisOutcomeModel:
         """
         """
 
-    # Load data
-    try:
+        # Load data
         self.data = pd.read_csv(
-            './data/data_for_ml/complete_ml_data.csv', low_memory=False)
-    except:
-        print "./data/data_for_ml/complete_ml_data.csv does not exist"
+                './data/data_for_ml/complete_ml_data.csv', low_memory=False)
     

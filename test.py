@@ -1,5 +1,11 @@
-from utils.data_load import DataLoad
+from utils.data_process import DataProcess
 from utils.thrombolysis_choice_model import ThrombolysisChoiceModel
 
-data_loader = DataLoad()
-thrombolysis_choice_model = ThrombolysisChoiceModel(data_loader)
+create_new_data = False
+
+# Create new data if required
+if create_new_data:
+    data_processor = DataProcess()
+    data_processor.create_ml_data()
+
+thrombolysis_choice_model = ThrombolysisChoiceModel()
