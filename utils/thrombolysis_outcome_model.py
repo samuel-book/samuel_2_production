@@ -12,9 +12,14 @@ class ThrombolysisOutcomeModel:
         
     """
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         """
-        Creates the data load object
         """
 
+    # Load data
+    try:
+        self.data = pd.read_csv(
+            './data/data_for_ml/complete_ml_data.csv', low_memory=False)
+    except:
+        print "./data/data_for_ml/complete_ml_data.csv does not exist"
     

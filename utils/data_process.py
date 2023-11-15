@@ -3,7 +3,7 @@ import pandas as pd
 
 from sklearn.model_selection import train_test_split
 
-class DataLoad:
+class DataProcess:
     
     """
     Loads data ready for models.
@@ -84,17 +84,18 @@ class DataLoad:
 
         # Limit to known discharge disability
         mask = self.ml_data['discharge_disability'] >= 0
+        self.ml_data = self.ml_data[mask]
 
         # Replace afib_anticoagulant NaN with 0
         self.ml_data['afib_anticoagulant'].fillna(0, inplace=True)
+
+        # Limit to patients who have had scan
+        mask = self.ml_data['arrival_to_scan_time'] >= 0
         self.ml_data = self.ml_data[mask]
 
         # Calculate onset to scan
         def f(row):
-            if row['arrival_to_scan_time'] > 0:
-                return row['arrival_to_scan_time'] + row['onset_to_arrival_time']
-            else:
-                return np.nan
+            return row['arrival_to_scan_time'] + row['onset_to_arrival_time']
         self.ml_data['onset_to_scan'] = self.ml_data.apply(f, axis=1)
 
         # Calculate onset to thrombolysis (return -10 for no thrombolysis)
@@ -121,3 +122,9 @@ class DataLoad:
 
         # Save complete data
         self.ml_data.to_csv('./data/data_for_ml/complete_ml_data.csv', index=False)
+
+        # Print lengths of output
+        len_all = len(self.full_data)
+        len_ml = len(self.ml_data)
+        frac = len_ml / len_all
+        print (f'All rows: {len_all}, ML rows:{len_ml}, Fraction: {frac:0.2f}')
