@@ -12,14 +12,7 @@ from xgboost import XGBClassifier
 
 class ThrombolysisChoiceModel:
     """
-    Predicts outcome
 
-    Attributes:
-
-        
-
-    Methods:
-        
     """
     
     def __init__(self):
@@ -32,6 +25,9 @@ class ThrombolysisChoiceModel:
         data = pd.read_csv(
                 './data/data_for_ml/complete_ml_data.csv', low_memory=False)
         
+        self.thrombolysis_rates = data.groupby('stroke_team').mean()['thrombolysis']
+        self.thrombolysis_rates.sort_index(inplace=True)
+
         # Get X and y
         X_fields = [
             'stroke_team',
@@ -46,12 +42,15 @@ class ThrombolysisChoiceModel:
             'age'
         ]
 
+        self.stroke_teams = list(data['stroke_team'].unique())
+        self.stroke_teams.sort()
+
         self.X = data[X_fields]
         self.y = data['thrombolysis']
 
         # Split 75:25
-        strat = data['stroke_team'].map(str) + '-' + data['thrombolysis'].map(
-            str)
+        strat = (data['stroke_team'].map(str) + '-' + 
+                 data['thrombolysis'].map(str))
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y, test_size = 0.25, stratify=strat, random_state = 42)
 
@@ -63,6 +62,44 @@ class ThrombolysisChoiceModel:
         self.X_test_one_hot = pd.concat([self.X_test, X_test_hosp], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
         self.X_test.to_csv('./output/thrombolysis_choice_feature_values.csv')
+
+
+    def estimate_benchmark_rates(self):
+        """
+        Estimate thrombolysis rate for each if decision made by a majority vote
+        of benchmark hospitals (those with highest hospital SHAP). Use all 
+        patients.
+        """
+
+        mask = self.hospital_mean_shap['benchmark'] == 1
+        benchmark_hospitals = list(self.hospital_mean_shap[mask].index)
+        all_X = pd.concat([self.X_train_one_hot, self.X_test_one_hot])
+
+        results = dict()
+        
+        # Loop through each hospital and get their patients
+        for hospital in self.stroke_teams:
+            mask = all_X[f'team_{hospital}'] == 1
+            selected_data = all_X[mask].copy()
+            # Remove hospital one hot encode
+            selected_data[f'team_{hospital}'] = 0
+            # Loop through benchamrk hospitals
+            decisions = []
+            for benchmark_hosp in benchmark_hospitals:
+                # Change one-hot encoding                
+                selected_data[f'team_{benchmark_hosp}'] = 1    
+                # Get predictions
+                decisions.append(self.model.predict(selected_data))
+                benchmark = np.array(decisions).mean(axis=0) >= 0.5
+                # Reset hospital
+                selected_data[f'team_{benchmark_hosp}'] = 0
+            results[hospital] = np.mean(benchmark)
+        
+        self.benchmark_thrombolysis = \
+            pd.DataFrame.from_dict(results, orient='index', columns=['benchmark'])
+        self.benchmark_thrombolysis.sort_index(inplace=True)
+        self.benchmark_thrombolysis['observed'] = self.thrombolysis_rates
+        self.benchmark_thrombolysis.to_csv('./output/benchmark_thrombolysis_rates.csv')
 
 
     def get_shap(self):
@@ -95,14 +132,20 @@ class ThrombolysisChoiceModel:
 
         # Get average hospital SHAP values
         self.shap_values_df['stroke_team'] = self.X_test['stroke_team'].values
-        self.hospital_mean_shap = \
+        self.hospital_mean_shap = pd.DataFrame()
+        self.hospital_mean_shap['hospital_SHAP'] = \
             self.shap_values_df.groupby('stroke_team').mean()['hospital']
+        # Identify and label top 25 benchmark hospitals
+        self.hospital_mean_shap.sort_values(
+            by='hospital_SHAP', ascending=False, inplace=True)
+        benchmark = np.zeros(len(self.hospital_mean_shap))
+        benchmark[0:25] = 1
+        self.hospital_mean_shap['benchmark'] = benchmark    
         self.hospital_mean_shap.to_csv(
             './output/thrombolysis_choice_hospital_shap.csv')
-        self.shap_values_df.drop('stroke_team', axis=1, inplace=True)
-
+        
         # Save
-
+        self.shap_values_df.drop('stroke_team', axis=1, inplace=True)
         self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
 
 
