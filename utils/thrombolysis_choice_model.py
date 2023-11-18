@@ -1,8 +1,8 @@
+import utils.plotting_functions
+
 import numpy as np
 import pandas as pd
-import pickle
 import shap
-
 
 from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
@@ -12,13 +12,144 @@ from xgboost import XGBClassifier
 
 class ThrombolysisChoiceModel:
     """
+    XGBoost model that learns the thrombolysis decisions each hopsital makes on
+    each patient (limited to arrivals within 4 hours of known stroke onset).
+
+    The 25 hospitals with the highest hospital SHAP (those hospitals with the 
+    highest propensity to use thrombolysis) as classed as 'benchmark' hospitals.
+    Patients from from all hopsitals have thrombolysis decisions predicted for
+    each of these benchmark hopsitals. A majority vote of those benchmark
+    hospitals is taken as a 'benchmark decision' for that patient. For each
+    hopsital the proportion of their own patients who have a positive benchmark
+    decision is recorded.
+
+
+    Model reference:
+    ----------------
+    
+    For more info see:
+
+    Pearn K, Allen M, Laws A, Monks T, Everson R, James M. (2023) 
+    What would other emergency stroke teams do? Using explainable machine
+    learning to understand variation in thrombolysis practice.
+    European Stroke Journal. https://doi.org/10.1177/23969873231189040
+
+    GitHub Pages on model background:
+    https://samuel-book.github.io/samuel_shap_paper_1/
+
+
+    Model info
+    ----------
+
+    The XGBoost model is based on the following patient features:
+
+    * stroke_team
+    * onset_to_arrival_time
+    * onset_during_sleep
+    * arrival_to_scan_time
+    * infarction
+    * stroke_severity
+    * precise_onset_known
+    * prior_disability
+    * afib_anticoagulant
+    * age
+
+    The model is trained on 75% of the data, and predictions are made for 25%
+    test set (apart from benchmark decisions, which are made for all patients).
+
+
+    Model outputs
+    -------------
+
+    The following csv files as saved to the output folder.
+
+     * benchmark_thrombolysis_rates: Records the observed and predicted
+     benchmark thrombolysis rates for each hopsital. Results are based on all
+     data (combined trainign and test sets).
+
+     * thrombolysis_choice_feature_values: Input values for the test set used
+     to predict thrombolysis decisions.
+
+     * thrombolysis_choice_hospital_shap: Average osiptal SHAP for each 
+     hospital.
+
+    * thrombolysis_choice_shap: All SHAP values for the test set.
+
+    * thrombolysis_choice_test_predictions: Model predictions (probability and
+    classification) and observed thrombolysis for test set.
+
+    
+    Methods:
+    --------
+
+    * __init__: Load data for modelling, get observed thrombolysis rates, split
+    into X and y, and one-hot encode stroke team.
+
+    * estimate_benchmark_rates: Estimate thrombolysis rate for each if decision
+    made by a majority vote of benchmark hospitals (those with highest hospital
+    SHAP). Uses all patients.
+
+    * get_shap: Fits a SHAP tree explainer to model (without background data),
+    get SHAP values, record total SHAP (and convert to probability), get average
+    hospital SHAP per hospital.
+
+    * run: calls training of model, gettign SHAP values, and estimating of
+    benchmark thrombolysis rates.
+
+    * train_model: fit XGBoost model, and measure accuracy (accuracy, balanced
+    accuracy, ROC-AUC, and compare predicted to observed thrombolysis rates).
+
+    
+    Attributes
+    ----------
+
+    Data:
+
+    * stroke_teams: List of all stroke teams (alphabetically sorted)
+
+    * X: all X data (see Model info above)
+    
+    * y: all y data: use of thrombolysis (0/1)
+    
+    * X_train, X_test, y_train, y_test: Train/test splits based on 75/25 split
+    stratified by stroke_team and use of thrombolysis
+    
+    * X_train_one_hot, X_test_one_hot: Data with one-hot encoding of stroke team
+
+    Model:
+
+    * model: XGBoost classifier
+    
+    * explainer: SHAP explainer model
+    
+    * shap_values_extended: Full SHAP (including base value and feature values)
+    
+    * shap_values: SHAP values from shap_values_extended
+
+    Outputs:
+
+    * y_pred_proba_df: observed class, predicted class, and predicted 
+    probabilities for test set
+    
+    * hospital_mean_shap: Average hospital SHAP for each hospital
+    
+    * shap_values_df: Feature values, SHAP base value, and all SHAP values
+
+    * benchmark_thrombolysis: observed and predicted benchmark thrombolysis use
+    for each hospital
+
+
+
+
+
+
 
     """
     
     def __init__(self):
         """
-        Load data for modelling, split into X and y, and one-hot encode stroke
-        team.
+        Load data for modelling, get observed thrombolysis rates, split into X
+        and y, and one-hot encode stroke team.
         """
 
         # Load data
@@ -67,7 +198,7 @@ class ThrombolysisChoiceModel:
     def estimate_benchmark_rates(self):
         """
         Estimate thrombolysis rate for each if decision made by a majority vote
-        of benchmark hospitals (those with highest hospital SHAP). Use all 
+        of benchmark hospitals (those with highest hospital SHAP). Uses all 
         patients.
         """
 
@@ -99,10 +230,17 @@ class ThrombolysisChoiceModel:
             pd.DataFrame.from_dict(results, orient='index', columns=['benchmark'])
         self.benchmark_thrombolysis.sort_index(inplace=True)
         self.benchmark_thrombolysis['observed'] = self.thrombolysis_rates
+        self.benchmark_thrombolysis = self.benchmark_thrombolysis.round(3)
         self.benchmark_thrombolysis.to_csv('./output/benchmark_thrombolysis_rates.csv')
 
 
     def get_shap(self):
+
+        """
+        Fits a SHAP tree explainer to model (without background data), get SHAP
+        values, record total SHAP (and convert to probability), get average
+        hospital SHAP per hospital.
+        """
 
         # Get SHAP valuess
         self.explainer = shap.TreeExplainer(self.model)
@@ -146,36 +284,45 @@ class ThrombolysisChoiceModel:
         
         # Save
         self.shap_values_df.drop('stroke_team', axis=1, inplace=True)
+        self.shap_values_df = self.shap_values_df.round(4)
         self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
 
 
+    def run(self):
+        """
+        Train model, get SHAP values, and estimate benchmark thrombolysis rates
+        """
+
+        self.train_model()
+        self.get_shap()
+        self.estimate_benchmark_rates()
+
     
     def train_model(self):
+        """
+        Fit XGBoost model, and measure accuracy (accuracy, balanced accuracy,
+        ROC-AUC, and compare predicted to observed thrombolysis rates).
+        """
 
         # Define and Fit model
         self.model = XGBClassifier(verbosity=0, seed=42, learning_rate=0.5)
         self.model.fit(self.X_train_one_hot, self.y_train)
-        # Save using pickle
-        filename = './models/thrombolysis_choice.p'
-        with open(filename, 'wb') as filehandler:
-            pickle.dump(self.model, filehandler)
         # Get predictions for test set
-        self.y_pred_proba = self.model.predict_proba(self.X_test_one_hot)[:, 1]
-        self.y_pred = self.y_pred_proba >= 0.5
-        y_pred_proba_df = pd.DataFrame()
-        y_pred_proba_df['probability'] = self.y_pred_proba
-        y_pred_proba_df['predicted'] = self.y_pred
-        y_pred_proba_df['observed'] = self.y_test
+        y_pred_proba = self.model.predict_proba(self.X_test_one_hot)[:, 1]
+        y_pred = y_pred_proba >= 0.5
+        self.y_pred_proba_df = pd.DataFrame()
+        self.y_pred_proba_df['probability'] = y_pred_proba
+        self.y_pred_proba_df['predicted'] = y_pred * 1
+        self.y_pred_proba_df['observed'] = self.y_test.values
 
-        y_pred_proba_df.to_csv('./output/thrombolysis_choice_test_predictions.csv')
+        self.y_pred_proba_df.to_csv('./output/thrombolysis_choice_test_predictions.csv')
         # Get accuracy of test set
-        accuracy = metrics.accuracy_score(self.y_test, self.y_pred)
+        accuracy = metrics.accuracy_score(self.y_test, y_pred)
         print(f'Accuracy: {accuracy:0.3f}')
-        balanced_accuracy = metrics.balanced_accuracy_score(self.y_test, self.y_pred)
+        balanced_accuracy = metrics.balanced_accuracy_score(self.y_test, y_pred)
         print(f'Balanced accuracy: {balanced_accuracy:0.3f}')
-        fpr, tpr, thresholds = roc_curve(self.y_test, self.y_pred_proba)
+        fpr, tpr, thresholds = roc_curve(self.y_test, y_pred_proba)
         roc_auc = auc(fpr, tpr)
         print(f'ROC AUC: {roc_auc:0.3f}')
         print(f'Actual thrombolysis: {np.mean(self.y_test):0.3f}')
-        print(f'Predicted thrombolysis: {np.mean(self.y_pred):0.3f}')
-        
+        print(f'Predicted thrombolysis: {np.mean(y_pred):0.3f}')
