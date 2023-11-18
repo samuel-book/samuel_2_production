@@ -12,5 +12,5 @@ dependencies:
   - scikit-learn
   - pip:
     - shap==0.41
-    - fpdf==1.7
+    - fpdf
     - xgboost==1.5
