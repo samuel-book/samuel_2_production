@@ -5,6 +5,7 @@ data/
 temp/
 output/
 models/
+/reports
 
 # Ignore file types that may contain data or models
 *.p

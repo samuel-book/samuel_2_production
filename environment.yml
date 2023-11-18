@@ -1,0 +1,16 @@
+name: samprod
+channels:
+  - defaults
+dependencies:
+  - jupyter
+  - jupyterlab
+  - matplotlib=3.4
+  - numpy=1.23
+  - pip
+  - pandas=1.5
+  - python=3.8
+  - scikit-learn
+  - pip:
+    - shap==0.41
+    - fpdf==1.7
+    - xgboost==1.5
