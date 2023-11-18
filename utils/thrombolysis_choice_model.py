@@ -287,6 +287,20 @@ class ThrombolysisChoiceModel:
         self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
 
 
+    def plot_hospital_shap(self):
+
+        hospital_shap = self.hospital_mean_shap['hospital_SHAP'].values
+        max_scale = max(max(hospital_shap), -min(hospital_shap))
+
+        fig = plt.figure(figsize=(6,5))
+        ax = fig.add_subplot()
+        ax.hist(hospital_shap, bins=np.arange(-max_scale, max_scale+0.01, 0.1))
+        ax.set_xlabel('Hospital SHAP value')
+        ax.set_ylabel('Count')
+        plt.savefig(f'./output/thrombolysis_choice_hopsital_shap.jpg', dpi=300, 
+                    bbox_inches='tight', pad_inches=0.2)
+
+    
     def plot_shap_scatter(self):
 
         feat_to_show = self.X_fields.copy()
@@ -305,10 +319,6 @@ class ThrombolysisChoiceModel:
             ax.set_ylabel(f'SHAP value (log odds) for\n{feat}')
             ax.set_title(feat)
             
-            # Censor arrival to scan to 1200 minutes
-            if feat == 'Arrival-to-scan time':
-                ax.set_xlim(0,1200)
-            
         plt.tight_layout(pad=2)
 
         fig.savefig(f'output/thrombolysis_choice_shap_scatter.jpg', 
@@ -324,6 +334,7 @@ class ThrombolysisChoiceModel:
         self.get_shap()
         self.estimate_benchmark_rates()
         self.plot_shap_scatter()
+        self.plot_hospital_shap()
 
     
     def train_model(self):
