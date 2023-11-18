@@ -83,6 +83,10 @@ class DataProcess:
         mask = self.ml_data['onset_to_arrival_time'] <= 240
         self.ml_data = self.ml_data[mask]
 
+        # Limit to 6 hours arrival to scan
+        mask = self.ml_data['arrival_to_scan_time'] <= 360
+        self.ml_data = self.ml_data[mask]
+
         # Limit to known discharge disability
         mask = self.ml_data['discharge_disability'] >= 0
         self.ml_data = self.ml_data[mask]

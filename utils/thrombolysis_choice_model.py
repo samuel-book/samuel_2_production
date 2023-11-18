@@ -1,5 +1,4 @@
-import utils.plotting_functions
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
@@ -160,7 +159,7 @@ class ThrombolysisChoiceModel:
         self.thrombolysis_rates.sort_index(inplace=True)
 
         # Get X and y
-        X_fields = [
+        self.X_fields = [
             'stroke_team',
             'onset_to_arrival_time',
             'onset_during_sleep',
@@ -176,7 +175,7 @@ class ThrombolysisChoiceModel:
         self.stroke_teams = list(data['stroke_team'].unique())
         self.stroke_teams.sort()
 
-        self.X = data[X_fields]
+        self.X = data[self.X_fields]
         self.y = data['thrombolysis']
 
         # Split 75:25
@@ -288,6 +287,34 @@ class ThrombolysisChoiceModel:
         self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
 
 
+    def plot_shap_scatter(self):
+
+        feat_to_show = self.X_fields.copy()
+        feat_to_show.remove('stroke_team')
+
+        fig = plt.figure(figsize=(12,12))
+        for n, feat in enumerate(feat_to_show):    
+            ax = fig.add_subplot(3,3,n+1)
+            shap.plots.scatter(self.shap_values_extended[:, feat], x_jitter=0, ax=ax, 
+                            show=False)
+            
+            # Add line at Shap = 0
+            feature_values = self.shap_values_extended[:, feat].data
+            ax.plot([ax.get_xlim()[0], ax.get_xlim()[1]], [0,0], c='0.5')    
+            
+            ax.set_ylabel(f'SHAP value (log odds) for\n{feat}')
+            ax.set_title(feat)
+            
+            # Censor arrival to scan to 1200 minutes
+            if feat == 'Arrival-to-scan time':
+                ax.set_xlim(0,1200)
+            
+        plt.tight_layout(pad=2)
+
+        fig.savefig(f'output/thrombolysis_choice_shap_scatter.jpg', 
+                    dpi=300, bbox_inches='tight', pad_inches=0.2)
+
+    
     def run(self):
         """
         Train model, get SHAP values, and estimate benchmark thrombolysis rates
@@ -296,6 +323,7 @@ class ThrombolysisChoiceModel:
         self.train_model()
         self.get_shap()
         self.estimate_benchmark_rates()
+        self.plot_shap_scatter()
 
     
     def train_model(self):
