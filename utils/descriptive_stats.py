@@ -89,3 +89,7 @@ class DescriptiveStatistics:
         # Convert to DataFrame
         self.hopsital_stats_all_arrivals = \
                 pd.DataFrame.from_dict(self.hopsital_stats_all_arrivals).T.round(2)
+        
+        
+    def run(self):
+        self.calculate_average_statistics()
