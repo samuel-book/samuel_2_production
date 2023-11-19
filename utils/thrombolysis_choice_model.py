@@ -285,7 +285,7 @@ class ThrombolysisChoiceModel:
         hospital_shap = self.hospital_mean_shap['hospital_SHAP'].values
         max_scale = max(max(hospital_shap), -min(hospital_shap))
 
-        fig = plt.figure(figsize=(6,5))
+        fig = plt.figure(figsize=(8,5))
         ax = fig.add_subplot()
         ax.hist(hospital_shap, bins=np.arange(-max_scale, max_scale+0.01, 0.1))
         ax.set_xlabel('Hospital SHAP value')
