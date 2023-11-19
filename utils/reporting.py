@@ -26,6 +26,7 @@ class GlobalReport():
         Generate report
         """
 
+        # Descriptive statistics section
         with self.doc.create(pl.Section('Descriptive statistics')):
             # Add intro tex from file
             with open('./utils/latex_text/global_ds_intro.txt') as file:
@@ -51,13 +52,36 @@ class GlobalReport():
                 './output/full_data_complete.csv', index_col='field')
 
             with self.doc.create(pl.LongTable('l c')) as table:
+                table.add_row(['Completion of SSNAP data in data used', ''])
                 table.add_hline()
                 table.add_row([df.index.name] + list(df.columns))
                 table.add_hline()
+                table.end_table_header()
+
                 for row in df.index:
                     table.add_row([row] + list(df.loc[row, :]))
                 table.add_hline()
 
+            # Add summary of hospital statistics
+
+            df = pd.read_csv(
+                './output/hopspital_stats.csv', index_col='stroke_team')
+            df = df.describe().round(3)
+            df['admissions'] = df['admissions'].round(0)
+            df = df.T
+
+            with self.doc.create(pl.LongTable('l c c c c c c c c')) as table:
+                table.add_row(['Variation of key statistics across all stroke teams',
+                               '', '', '', '', '', '', '', ''])
+                table.add_hline()
+                table.add_row([df.index.name] + list(df.columns))
+                table.add_hline()
+                table.end_table_header()
+                for row in df.index:
+                    table.add_row([row] + list(df.loc[row, :]))
+                table.add_hline()
+
+        # Machine learnign section
         with self.doc.create(pl.Section('Machine learning')):
             self.doc.append(
                 'SHAP values for features apart from hospitals are shown in figure 1.')
