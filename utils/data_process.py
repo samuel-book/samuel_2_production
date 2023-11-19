@@ -48,15 +48,6 @@ class DataProcess:
         self.year_min = year_min
         self.year_max = year_max
         
-        # Load stored data
-        self.load_data()
-
-    
-    def load_data(self):
-        """
-        Load data and create datasets
-        """
-
         # Load full data
         self.full_data = pd.read_csv(
             './data/data_for_models.csv', low_memory=False)
@@ -65,6 +56,7 @@ class DataProcess:
         mask = ((self.full_data['year'] >= self.year_min) &
                 (self.full_data['year'] <= self.year_max))
         self.full_data = self.full_data[mask]
+
         
 
     def create_ml_data(self):

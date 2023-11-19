@@ -12,11 +12,12 @@ class GlobalReport():
         geometry_options = {
             "paper": "a4paper",
             "margin": "1.5cm",
-}
+        }
         
         self.doc = pl.Document(geometry_options=geometry_options)
         self.doc.preamble.append(pl.Command('title', 'SAMueL Analysis'))
-        self.doc.preamble.append(pl.Command('author', 'SAMueL'))
+        self.doc.preamble.append(pl.Command(
+            'author', 'SAMueL Team (contact m.allen@exeter.ac.uk)'))
         self.doc.preamble.append(pl.Command('date', ''))
         self.doc.append(pl.NoEscape(r'\maketitle'))
 
@@ -28,6 +29,13 @@ class GlobalReport():
         """
 
         with self.doc.create(pl.Section('Descriptive statistics')):
+
+            # Add intro tex from file
+            with open('./utils/latex_text/global_ds_intro.txt') as file:
+                tex = file.read()
+            self.doc.append(pl.NoEscape(tex))
+            self.doc.append(pl.Command('vspace', '3mm'))
+
 
             # Excample table from dataframe
 
