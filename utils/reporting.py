@@ -1,6 +1,7 @@
 import pandas as pd
 import pylatex as pl
 
+
 class GlobalReport():
 
     def __init__(self):
@@ -13,7 +14,6 @@ class GlobalReport():
             "margin": "1.5cm",
         }
     
-
         self.doc = pl.Document(geometry_options=geometry_options)
         self.doc.packages.append(pl.Package('parskip'))
         self.doc.preamble.append(pl.Command('title', 'SAMueL Analysis'))
@@ -21,7 +21,6 @@ class GlobalReport():
             'author', 'SAMueL Team (contact m.allen@exeter.ac.uk)'))
         self.doc.preamble.append(pl.Command('date', ''))
         self.doc.append(pl.NoEscape(r'\maketitle'))
-
 
     def create_report(self):
         """
