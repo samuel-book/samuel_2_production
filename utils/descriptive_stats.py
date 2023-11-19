@@ -1,6 +1,5 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+
 
 class DescriptiveStatistics:
     """
@@ -17,7 +16,7 @@ class DescriptiveStatistics:
 
         # Load full data
         self.full_data = pd.read_csv('./data/data_for_models.csv', low_memory=False)
-        
+
         # Restrict years
         mask = ((self.full_data['year'] >= self.year_min) &
                 (self.full_data['year'] <= self.year_max))
@@ -26,7 +25,7 @@ class DescriptiveStatistics:
         # Add fields
         self.full_data['onset_within_4hrs'] = \
             self.full_data['onset_to_arrival_time'] <= 240
-        
+
         # Save completeion
         complete = pd.DataFrame()
         complete['complete'] = self.full_data.count()/len(self.full_data)
@@ -66,9 +65,8 @@ class DescriptiveStatistics:
         self.stats_summary['total records'] = len(self.full_data)
         self.stats_summary['4 hr arrivals'] = self.full_data['onset_within_4hrs'].mean()
         self.stats_summary = pd.DataFrame.from_dict(self.stats_summary, orient='index')
-        self.stats_summary.index.name='field'
+        self.stats_summary.index.name = 'field'
         self.stats_summary.to_csv('./output/stats_summary.csv')
-
 
     def calculate_average_statistics(self):
 
@@ -87,8 +85,11 @@ class DescriptiveStatistics:
 
         # Convert to DataFrame
         self.hopsital_stats_all_arrivals = \
-                pd.DataFrame.from_dict(self.hopsital_stats_all_arrivals).T.round(2)
-        
-        
+            pd.DataFrame.from_dict(self.hopsital_stats_all_arrivals).T.round(2)
+        self.hopsital_stats_all_arrivals.index.name = 'stroke_team'
+
+        # Save
+        self.hopsital_stats_all_arrivals.to_csv('./output/hopspital_stats.csv')
+
     def run(self):
         self.calculate_average_statistics()

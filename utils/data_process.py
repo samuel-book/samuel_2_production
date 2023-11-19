@@ -1,10 +1,8 @@
-import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import train_test_split
 
 class DataProcess:
-    
+
     """
     Loads data ready for models.
 
@@ -12,12 +10,12 @@ class DataProcess:
 
     full_data:
         Pandas dataframe of full SSNAP data (Cleaned)
-        
+
 
     Methods:
-        
+
     """
-    
+
     def __init__(self, year_min=2016, year_max=2021):
         """
         Creates the data load object
@@ -47,14 +45,13 @@ class DataProcess:
 
         self.year_min = year_min
         self.year_max = year_max
-        
+
         # Load full data
         self.full_data = pd.read_csv('./data/data_for_models.csv', low_memory=False)
 
         # Restrict years
         mask = ((self.full_data['year'] >= self.year_min) & (self.full_data['year'] <= self.year_max))
         self.full_data = self.full_data[mask]
-        
 
     def create_ml_data(self):
         """
@@ -122,4 +119,4 @@ class DataProcess:
         len_all = len(self.full_data)
         len_ml = len(self.ml_data)
         frac = len_ml / len_all
-        print (f'All rows: {len_all}, ML rows:{len_ml}, Fraction: {frac:0.2f}')
+        print(f'All rows: {len_all}, ML rows:{len_ml}, Fraction: {frac:0.2f}')

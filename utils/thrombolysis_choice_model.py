@@ -9,13 +9,14 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
+
 class ThrombolysisChoiceModel:
     """
-    XGBoost model that learns the thrombolysis decisions each hopsital makes on each patient 
+    XGBoost model that learns the thrombolysis decisions each hopsital makes on each patient
     (limited to arrivals within 4 hours of known stroke onset).
 
     The 25 hospitals with the highest hospital SHAP (those hospitals with the highest propensity to
-    use thrombolysis) as classed as 'benchmark' hospitals. Patients from from all hopsitals have 
+    use thrombolysis) as classed as 'benchmark' hospitals. Patients from from all hopsitals have
     thrombolysis decisions predicted for each of these benchmark hopsitals. A majority vote of those
     benchmark hospitals is taken as a 'benchmark decision' for that patient. For each hopsital the
     proportion of their own patients who have a positive benchmark decision is recorded.
@@ -23,7 +24,7 @@ class ThrombolysisChoiceModel:
 
     Model reference:
     ----------------
-    
+
     For more info see:
 
     Pearn K, Allen M, Laws A, Monks T, Everson R, James M. (2023) What would other emergency stroke
@@ -61,7 +62,7 @@ class ThrombolysisChoiceModel:
      * benchmark_thrombolysis_rates: Records the observed and predicted benchmark thrombolysis rates
      for each hopsital. Results are based on all data (combined trainign and test sets).
 
-     * thrombolysis_choice_feature_values: Input values for the test set used to predict 
+     * thrombolysis_choice_feature_values: Input values for the test set used to predict
      thrombolysis decisions.
 
     * thrombolysis_choice_hospital_shap: Average osiptal SHAP for each hospital.
@@ -71,26 +72,26 @@ class ThrombolysisChoiceModel:
     * thrombolysis_choice_test_predictions: Model predictions (probability and classification) and
     observed thrombolysis for test set.
 
-    
+
     Methods:
     --------
 
-    * __init__: Load data for modelling, get observed thrombolysis rates, split into X and y, and 
+    * __init__: Load data for modelling, get observed thrombolysis rates, split into X and y, and
     one-hot encode stroke team.
 
     * estimate_benchmark_rates: Estimate thrombolysis rate for each if decision made by a majority
     vote of benchmark hospitals (those with highest hospital SHAP). Uses all patients.
 
-    * get_shap: Fits a SHAP tree explainer to model (without background data), get SHAP values, 
+    * get_shap: Fits a SHAP tree explainer to model (without background data), get SHAP values,
     record total SHAP (and convert to probability), get average hospital SHAP per hospital.
 
     * run: calls training of model, gettign SHAP values, and estimating of benchmark thrombolysis
     rates.
 
-    * train_model: fit XGBoost model, and measure accuracy (accuracy, balanced accuracy, ROC-AUC, 
+    * train_model: fit XGBoost model, and measure accuracy (accuracy, balanced accuracy, ROC-AUC,
     and compare predicted to observed thrombolysis rates).
 
-    
+
     Attributes
     ----------
 
@@ -99,36 +100,36 @@ class ThrombolysisChoiceModel:
     * stroke_teams: List of all stroke teams (alphabetically sorted)
 
     * X: all X data (see Model info above)
-    
+
     * y: all y data: use of thrombolysis (0/1)
-    
-    * X_train, X_test, y_train, y_test: Train/test splits based on 75/25 split stratified by 
+
+    * X_train, X_test, y_train, y_test: Train/test splits based on 75/25 split stratified by
     stroke_team and use of thrombolysis
-    
+
     * X_train_one_hot, X_test_one_hot: Data with one-hot encoding of stroke team
 
     Model:
 
     * model: XGBoost classifier
-    
+
     * explainer: SHAP explainer model
-    
+
     * shap_values_extended: Full SHAP (including base value and feature values)
-    
+
     * shap_values: SHAP values from shap_values_extended
 
     Outputs:
 
-    * y_pred_proba_df: observed class, predicted class, and predicted 
+    * y_pred_proba_df: observed class, predicted class, and predicted
     probabilities for test set
-    
+
     * hospital_mean_shap: Average hospital SHAP for each hospital
-    
+
     * shap_values_df: Feature values, SHAP base value, and all SHAP values
 
     * benchmark_thrombolysis: observed and predicted benchmark thrombolysis use for each hospital
     """
-    
+
     def __init__(self):
         """
         Load data for modelling, get observed thrombolysis rates, split into X and y, and one-hot
@@ -138,7 +139,7 @@ class ThrombolysisChoiceModel:
         # Load data
         data = pd.read_csv(
                 './data/data_for_ml/complete_ml_data.csv', low_memory=False)
-        
+
         self.thrombolysis_rates = data.groupby('stroke_team').mean()['thrombolysis']
         self.thrombolysis_rates.sort_index(inplace=True)
 
@@ -165,21 +166,20 @@ class ThrombolysisChoiceModel:
         # Split 75:25
         strat = data['stroke_team'].map(str) + '-' + data['thrombolysis'].map(str)
         self.X_train, self.X_test, self.y_train, self.y_test = \
-            train_test_split(self.X, self.y, test_size = 0.25, stratify=strat, random_state = 42)
+            train_test_split(self.X, self.y, test_size=0.25, stratify=strat, random_state=42)
 
         # One hot encode hospitals
-        X_train_hosp = pd.get_dummies(self.X_train['stroke_team'], prefix = 'team')
+        X_train_hosp = pd.get_dummies(self.X_train['stroke_team'], prefix='team')
         self.X_train_one_hot = pd.concat([self.X_train, X_train_hosp], axis=1)
         self.X_train_one_hot.drop('stroke_team', axis=1, inplace=True)
-        X_test_hosp = pd.get_dummies(self.X_test['stroke_team'], prefix = 'team')
+        X_test_hosp = pd.get_dummies(self.X_test['stroke_team'], prefix='team')
         self.X_test_one_hot = pd.concat([self.X_test, X_test_hosp], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
         self.X_test.to_csv('./output/thrombolysis_choice_feature_values.csv')
 
-
     def estimate_benchmark_rates(self):
         """
-        Estimate thrombolysis rate for each if decision made by a majority vote of benchmark 
+        Estimate thrombolysis rate for each if decision made by a majority vote of benchmark
         hospitals (those with highest hospital SHAP). Uses all patients.
         """
 
@@ -188,7 +188,7 @@ class ThrombolysisChoiceModel:
         all_X = pd.concat([self.X_train_one_hot, self.X_test_one_hot])
 
         results = dict()
-        
+
         # Loop through each hospital and get their patients
         for hospital in self.stroke_teams:
             mask = all_X[f'team_{hospital}'] == 1
@@ -198,22 +198,21 @@ class ThrombolysisChoiceModel:
             # Loop through benchamrk hospitals
             decisions = []
             for benchmark_hosp in benchmark_hospitals:
-                # Change one-hot encoding                
-                selected_data[f'team_{benchmark_hosp}'] = 1    
+                # Change one-hot encoding
+                selected_data[f'team_{benchmark_hosp}'] = 1
                 # Get predictions
                 decisions.append(self.model.predict(selected_data))
                 benchmark = np.array(decisions).mean(axis=0) >= 0.5
                 # Reset hospital
                 selected_data[f'team_{benchmark_hosp}'] = 0
             results[hospital] = np.mean(benchmark)
-        
+
         self.benchmark_thrombolysis = \
             pd.DataFrame.from_dict(results, orient='index', columns=['benchmark'])
         self.benchmark_thrombolysis.sort_index(inplace=True)
         self.benchmark_thrombolysis['observed'] = self.thrombolysis_rates
         self.benchmark_thrombolysis = self.benchmark_thrombolysis.round(3)
         self.benchmark_thrombolysis.to_csv('./output/benchmark_thrombolysis_rates.csv')
-
 
     def get_shap(self):
 
@@ -230,7 +229,7 @@ class ThrombolysisChoiceModel:
             self.shap_values, columns=list(self.X_test_one_hot))
 
         # Sum hospital SHAPs
-        teams = [hosp for hosp in list(self.X_train_one_hot) if hosp[0:4]=='team']
+        teams = [hosp for hosp in list(self.X_train_one_hot) if hosp[0:4] == 'team']
         self.shap_values_df['hospital'] = self.shap_values_df[teams].sum(axis=1)
         for team in teams:
             self.shap_values_df.drop(team, axis=1, inplace=True)
@@ -245,7 +244,7 @@ class ThrombolysisChoiceModel:
         self.shap_values_df = self.shap_values_df[cols]
 
         # Add probability
-        odds = np.exp(self.shap_values_df['total'] ) 
+        odds = np.exp(self.shap_values_df['total'])
         self.shap_values_df['probability'] = odds / (1 + odds)
 
         # Get average hospital SHAP values
@@ -258,53 +257,49 @@ class ThrombolysisChoiceModel:
             by='hospital_SHAP', ascending=False, inplace=True)
         benchmark = np.zeros(len(self.hospital_mean_shap))
         benchmark[0:25] = 1
-        self.hospital_mean_shap['benchmark'] = benchmark    
+        self.hospital_mean_shap['benchmark'] = benchmark
         self.hospital_mean_shap.to_csv(
             './output/thrombolysis_choice_hospital_shap.csv')
-        
+
         # Save
         self.shap_values_df.drop('stroke_team', axis=1, inplace=True)
         self.shap_values_df = self.shap_values_df.round(4)
         self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
-
 
     def plot_hospital_shap(self):
 
         hospital_shap = self.hospital_mean_shap['hospital_SHAP'].values
         max_scale = max(max(hospital_shap), -min(hospital_shap))
 
-        fig = plt.figure(figsize=(8,5))
+        fig = plt.figure(figsize=(8, 5))
         ax = fig.add_subplot()
         ax.hist(hospital_shap, bins=np.arange(-max_scale, max_scale+0.01, 0.1))
         ax.set_xlabel('Hospital SHAP value')
         ax.set_ylabel('Count')
-        plt.savefig(f'./output/thrombolysis_choice_hopsital_shap.jpg', dpi=300, 
+        plt.savefig('./output/thrombolysis_choice_hopsital_shap.jpg', dpi=300,
                     bbox_inches='tight', pad_inches=0.2)
 
-    
     def plot_shap_scatter(self):
 
         feat_to_show = self.X_fields.copy()
         feat_to_show.remove('stroke_team')
 
-        fig = plt.figure(figsize=(12,12))
-        for n, feat in enumerate(feat_to_show):    
-            ax = fig.add_subplot(3,3,n+1)
+        fig = plt.figure(figsize=(12, 12))
+        for n, feat in enumerate(feat_to_show):
+            ax = fig.add_subplot(3, 3, n+1)
             shap.plots.scatter(self.shap_values_extended[:, feat], x_jitter=0, ax=ax, show=False)
-            
+
             # Add line at Shap = 0
-            feature_values = self.shap_values_extended[:, feat].data
-            ax.plot([ax.get_xlim()[0], ax.get_xlim()[1]], [0,0], c='0.5')    
-            
+            ax.plot([ax.get_xlim()[0], ax.get_xlim()[1]], [0, 0], c='0.5')
+
             ax.set_ylabel(f'SHAP value (log odds) for\n{feat}')
             ax.set_title(feat)
-            
+
         plt.tight_layout(pad=2)
 
-        fig.savefig(f'output/thrombolysis_choice_shap_scatter.jpg', 
+        fig.savefig('output/thrombolysis_choice_shap_scatter.jpg',
                     dpi=300, bbox_inches='tight', pad_inches=0.2)
 
-    
     def run(self):
         """
         Train model, get SHAP values, and estimate benchmark thrombolysis rates
@@ -316,7 +311,6 @@ class ThrombolysisChoiceModel:
         self.plot_shap_scatter()
         self.plot_hospital_shap()
 
-    
     def train_model(self):
         """
         Fit XGBoost model, and measure accuracy (accuracy, balanced accuracy, ROC-AUC, and compare
