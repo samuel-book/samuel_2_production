@@ -18,7 +18,7 @@ class DataProcess:
         
     """
     
-    def __init__(self):
+    def __init__(self, year_min=2016, year_max=2021):
         """
         Creates the data load object
         """
@@ -45,8 +45,8 @@ class DataProcess:
             'discharge_disability'
         ]
 
-        self.year_min = 2016
-        self.year_max = 2025
+        self.year_min = year_min
+        self.year_max = year_max
         
         # Load stored data
         self.load_data()
