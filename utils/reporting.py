@@ -41,7 +41,8 @@ class GlobalReport():
             min_year, max_year = df.loc['min year'][0], df.loc['max year'][0]
             txt = (f'The total number of records was {records:,.0f}. ' +
                    f'The year range of the data was {min_year:0.0f}-{max_year:0.0f}. ' +
-                   f'The proportion of patients arriving within 4 hours of known onset was {arrival_4hr:0.2f}. ' +
+                   'The proportion of patients arriving within 4 hours of known onset was ' +
+                   f'{arrival_4hr:0.2f}. ' +
                    'The fraction of each data field that was complete is shown in the table below')
 
             self.doc.append(txt)
@@ -71,8 +72,8 @@ class GlobalReport():
             df = df.T
 
             with self.doc.create(pl.LongTable('l c c c c c c c c')) as table:
-                table.add_row(['Variation of key statistics across all stroke teams',
-                               '', '', '', '', '', '', '', ''])
+                table.add_row(['Variation of key statistics across all stroke teams', '', '', '',
+                               '', '', '', '', ''])
                 table.add_hline()
                 table.add_row([df.index.name] + list(df.columns))
                 table.add_hline()
