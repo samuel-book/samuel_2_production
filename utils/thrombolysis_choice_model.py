@@ -136,13 +136,6 @@ class ThrombolysisChoiceModel:
 
     * benchmark_thrombolysis: observed and predicted benchmark thrombolysis use
     for each hospital
-
-
-
-
-
-
-
     """
     
     def __init__(self):

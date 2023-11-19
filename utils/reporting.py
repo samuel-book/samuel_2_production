@@ -2,7 +2,6 @@ import pandas as pd
 import pylatex as pl
 
 class GlobalReport():
-    pass
 
     def __init__(self):
         """
@@ -13,8 +12,10 @@ class GlobalReport():
             "paper": "a4paper",
             "margin": "1.5cm",
         }
-        
+    
+
         self.doc = pl.Document(geometry_options=geometry_options)
+        self.doc.packages.append(pl.Package('parskip'))
         self.doc.preamble.append(pl.Command('title', 'SAMueL Analysis'))
         self.doc.preamble.append(pl.Command(
             'author', 'SAMueL Team (contact m.allen@exeter.ac.uk)'))
@@ -22,7 +23,6 @@ class GlobalReport():
         self.doc.append(pl.NoEscape(r'\maketitle'))
 
 
-    
     def create_report(self):
         """
         Generate report
@@ -34,15 +34,26 @@ class GlobalReport():
             with open('./utils/latex_text/global_ds_intro.txt') as file:
                 tex = file.read()
             self.doc.append(pl.NoEscape(tex))
-            self.doc.append(pl.Command('vspace', '3mm'))
+            self.doc.append(pl.Command('vspace', '2mm'))
 
+            # Add general info
+            df = pd.read_csv('./output/stats_summary.csv', index_col='field')
+            records = df.loc['total records'][0]
+            arrival_4hr = df.loc['4 hr arrivals'][0]
+            min_year, max_year = df.loc['min year'][0], df.loc['max year'][0]
+            txt = (f'The total number of records was {records:,.0f}. ' +
+                  f'The year range of the data was {min_year:0.0f}-{max_year:0.0f}. ' +
+                  f'The proportion of patients arriving within 4 hours of known onset was {arrival_4hr:0.2f}. ' +
+                  'The fraction of each data field that was complete is shown in the table below')
+ 
+            self.doc.append(txt)
+            self.doc.append(pl.Command('vspace', '2mm'))
 
-            # Excample table from dataframe
+            # Add info on completion
+            df = pd.read_csv('./output/full_data_complete.csv', index_col='field')
+    
 
-            df = pd.DataFrame({'a': [1,2,3], 'b': [9,8,7]})
-            df.index.name = 'x'
-
-            with self.doc.create(pl.Tabular('ccc')) as table:
+            with self.doc.create(pl.LongTable('l c')) as table:
                 table.add_hline()
                 table.add_row([df.index.name] + list(df.columns))
                 table.add_hline()
@@ -62,6 +73,3 @@ class GlobalReport():
 
 
         self.doc.generate_pdf('./reports/global_report', clean_tex=True)
-
-
-

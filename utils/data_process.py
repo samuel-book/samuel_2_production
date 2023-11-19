@@ -56,7 +56,6 @@ class DataProcess:
         mask = ((self.full_data['year'] >= self.year_min) &
                 (self.full_data['year'] <= self.year_max))
         self.full_data = self.full_data[mask]
-
         
 
     def create_ml_data(self):
