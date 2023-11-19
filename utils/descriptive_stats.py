@@ -16,8 +16,7 @@ class DescriptiveStatistics:
         self.year_max = year_max
 
         # Load full data
-        self.full_data = pd.read_csv(
-            './data/data_for_models.csv', low_memory=False)
+        self.full_data = pd.read_csv('./data/data_for_models.csv', low_memory=False)
         
         # Restrict years
         mask = ((self.full_data['year'] >= self.year_min) &

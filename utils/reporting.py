@@ -17,8 +17,7 @@ class GlobalReport():
         self.doc = pl.Document(geometry_options=geometry_options)
         self.doc.packages.append(pl.Package('parskip'))
         self.doc.preamble.append(pl.Command('title', 'SAMueL Analysis'))
-        self.doc.preamble.append(pl.Command(
-            'author', 'SAMueL Team (contact m.allen@exeter.ac.uk)'))
+        self.doc.preamble.append(pl.Command('author', 'SAMueL Team (contact m.allen@exeter.ac.uk)'))
         self.doc.preamble.append(pl.Command('date', ''))
         self.doc.append(pl.NoEscape(r'\maketitle'))
 
@@ -28,7 +27,6 @@ class GlobalReport():
         """
 
         with self.doc.create(pl.Section('Descriptive statistics')):
-
             # Add intro tex from file
             with open('./utils/latex_text/global_ds_intro.txt') as file:
                 tex = file.read()
@@ -61,14 +59,11 @@ class GlobalReport():
                 table.add_hline()
 
         with self.doc.create(pl.Section('Machine learning')):
-
             self.doc.append(
                 'SHAP values for features apart from hospitals are shown in figure 1.')
 
             with self.doc.create(pl.Figure()) as fig:
-                fig.add_image(
-                    './../output/thrombolysis_choice_shap_scatter.jpg',
-                    width=("15cm"))
+                fig.add_image('./../output/thrombolysis_choice_shap_scatter.jpg', width=("15cm"))
                 fig.add_caption('SHAP values')
 
         self.doc.generate_pdf('./reports/global_report', clean_tex=True)

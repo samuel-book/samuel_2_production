@@ -11,16 +11,14 @@ from xgboost import XGBClassifier
 
 class ThrombolysisChoiceModel:
     """
-    XGBoost model that learns the thrombolysis decisions each hopsital makes on
-    each patient (limited to arrivals within 4 hours of known stroke onset).
+    XGBoost model that learns the thrombolysis decisions each hopsital makes on each patient 
+    (limited to arrivals within 4 hours of known stroke onset).
 
-    The 25 hospitals with the highest hospital SHAP (those hospitals with the 
-    highest propensity to use thrombolysis) as classed as 'benchmark' hospitals.
-    Patients from from all hopsitals have thrombolysis decisions predicted for
-    each of these benchmark hopsitals. A majority vote of those benchmark
-    hospitals is taken as a 'benchmark decision' for that patient. For each
-    hopsital the proportion of their own patients who have a positive benchmark
-    decision is recorded.
+    The 25 hospitals with the highest hospital SHAP (those hospitals with the highest propensity to
+    use thrombolysis) as classed as 'benchmark' hospitals. Patients from from all hopsitals have 
+    thrombolysis decisions predicted for each of these benchmark hopsitals. A majority vote of those
+    benchmark hospitals is taken as a 'benchmark decision' for that patient. For each hopsital the
+    proportion of their own patients who have a positive benchmark decision is recorded.
 
 
     Model reference:
@@ -28,13 +26,11 @@ class ThrombolysisChoiceModel:
     
     For more info see:
 
-    Pearn K, Allen M, Laws A, Monks T, Everson R, James M. (2023) 
-    What would other emergency stroke teams do? Using explainable machine
-    learning to understand variation in thrombolysis practice.
+    Pearn K, Allen M, Laws A, Monks T, Everson R, James M. (2023) What would other emergency stroke
+    teams do? Using explainable machine learning to understand variation in thrombolysis practice.
     European Stroke Journal. https://doi.org/10.1177/23969873231189040
 
-    GitHub Pages on model background:
-    https://samuel-book.github.io/samuel_shap_paper_1/
+    GitHub Pages on model background: https://samuel-book.github.io/samuel_shap_paper_1/
 
 
     Model info
@@ -53,8 +49,8 @@ class ThrombolysisChoiceModel:
     * afib_anticoagulant
     * age
 
-    The model is trained on 75% of the data, and predictions are made for 25%
-    test set (apart from benchmark decisions, which are made for all patients).
+    The model is trained on 75% of the data, and predictions are made for 25% test set (apart from
+    benchmark decisions, which are made for all patients).
 
 
     Model outputs
@@ -62,41 +58,37 @@ class ThrombolysisChoiceModel:
 
     The following csv files as saved to the output folder.
 
-     * benchmark_thrombolysis_rates: Records the observed and predicted
-     benchmark thrombolysis rates for each hopsital. Results are based on all
-     data (combined trainign and test sets).
+     * benchmark_thrombolysis_rates: Records the observed and predicted benchmark thrombolysis rates
+     for each hopsital. Results are based on all data (combined trainign and test sets).
 
-     * thrombolysis_choice_feature_values: Input values for the test set used
-     to predict thrombolysis decisions.
+     * thrombolysis_choice_feature_values: Input values for the test set used to predict 
+     thrombolysis decisions.
 
-     * thrombolysis_choice_hospital_shap: Average osiptal SHAP for each 
-     hospital.
+    * thrombolysis_choice_hospital_shap: Average osiptal SHAP for each hospital.
 
     * thrombolysis_choice_shap: All SHAP values for the test set.
 
-    * thrombolysis_choice_test_predictions: Model predictions (probability and
-    classification) and observed thrombolysis for test set.
+    * thrombolysis_choice_test_predictions: Model predictions (probability and classification) and
+    observed thrombolysis for test set.
 
     
     Methods:
     --------
 
-    * __init__: Load data for modelling, get observed thrombolysis rates, split
-    into X and y, and one-hot encode stroke team.
+    * __init__: Load data for modelling, get observed thrombolysis rates, split into X and y, and 
+    one-hot encode stroke team.
 
-    * estimate_benchmark_rates: Estimate thrombolysis rate for each if decision
-    made by a majority vote of benchmark hospitals (those with highest hospital
-    SHAP). Uses all patients.
+    * estimate_benchmark_rates: Estimate thrombolysis rate for each if decision made by a majority
+    vote of benchmark hospitals (those with highest hospital SHAP). Uses all patients.
 
-    * get_shap: Fits a SHAP tree explainer to model (without background data),
-    get SHAP values, record total SHAP (and convert to probability), get average
-    hospital SHAP per hospital.
+    * get_shap: Fits a SHAP tree explainer to model (without background data), get SHAP values, 
+    record total SHAP (and convert to probability), get average hospital SHAP per hospital.
 
-    * run: calls training of model, gettign SHAP values, and estimating of
-    benchmark thrombolysis rates.
+    * run: calls training of model, gettign SHAP values, and estimating of benchmark thrombolysis
+    rates.
 
-    * train_model: fit XGBoost model, and measure accuracy (accuracy, balanced
-    accuracy, ROC-AUC, and compare predicted to observed thrombolysis rates).
+    * train_model: fit XGBoost model, and measure accuracy (accuracy, balanced accuracy, ROC-AUC, 
+    and compare predicted to observed thrombolysis rates).
 
     
     Attributes
@@ -110,8 +102,8 @@ class ThrombolysisChoiceModel:
     
     * y: all y data: use of thrombolysis (0/1)
     
-    * X_train, X_test, y_train, y_test: Train/test splits based on 75/25 split
-    stratified by stroke_team and use of thrombolysis
+    * X_train, X_test, y_train, y_test: Train/test splits based on 75/25 split stratified by 
+    stroke_team and use of thrombolysis
     
     * X_train_one_hot, X_test_one_hot: Data with one-hot encoding of stroke team
 
@@ -134,14 +126,13 @@ class ThrombolysisChoiceModel:
     
     * shap_values_df: Feature values, SHAP base value, and all SHAP values
 
-    * benchmark_thrombolysis: observed and predicted benchmark thrombolysis use
-    for each hospital
+    * benchmark_thrombolysis: observed and predicted benchmark thrombolysis use for each hospital
     """
     
     def __init__(self):
         """
-        Load data for modelling, get observed thrombolysis rates, split into X
-        and y, and one-hot encode stroke team.
+        Load data for modelling, get observed thrombolysis rates, split into X and y, and one-hot
+        encode stroke team.
         """
 
         # Load data
@@ -172,10 +163,9 @@ class ThrombolysisChoiceModel:
         self.y = data['thrombolysis']
 
         # Split 75:25
-        strat = (data['stroke_team'].map(str) + '-' + 
-                 data['thrombolysis'].map(str))
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.X, self.y, test_size = 0.25, stratify=strat, random_state = 42)
+        strat = data['stroke_team'].map(str) + '-' + data['thrombolysis'].map(str)
+        self.X_train, self.X_test, self.y_train, self.y_test = \
+            train_test_split(self.X, self.y, test_size = 0.25, stratify=strat, random_state = 42)
 
         # One hot encode hospitals
         X_train_hosp = pd.get_dummies(self.X_train['stroke_team'], prefix = 'team')
@@ -189,9 +179,8 @@ class ThrombolysisChoiceModel:
 
     def estimate_benchmark_rates(self):
         """
-        Estimate thrombolysis rate for each if decision made by a majority vote
-        of benchmark hospitals (those with highest hospital SHAP). Uses all 
-        patients.
+        Estimate thrombolysis rate for each if decision made by a majority vote of benchmark 
+        hospitals (those with highest hospital SHAP). Uses all patients.
         """
 
         mask = self.hospital_mean_shap['benchmark'] == 1
@@ -229,9 +218,8 @@ class ThrombolysisChoiceModel:
     def get_shap(self):
 
         """
-        Fits a SHAP tree explainer to model (without background data), get SHAP
-        values, record total SHAP (and convert to probability), get average
-        hospital SHAP per hospital.
+        Fits a SHAP tree explainer to model (without background data), get SHA values, record total
+        SHAP (and convert to probability), get average hospital SHAP per hospital.
         """
 
         # Get SHAP valuess
@@ -302,8 +290,7 @@ class ThrombolysisChoiceModel:
         fig = plt.figure(figsize=(12,12))
         for n, feat in enumerate(feat_to_show):    
             ax = fig.add_subplot(3,3,n+1)
-            shap.plots.scatter(self.shap_values_extended[:, feat], x_jitter=0, ax=ax, 
-                            show=False)
+            shap.plots.scatter(self.shap_values_extended[:, feat], x_jitter=0, ax=ax, show=False)
             
             # Add line at Shap = 0
             feature_values = self.shap_values_extended[:, feat].data
@@ -332,8 +319,8 @@ class ThrombolysisChoiceModel:
     
     def train_model(self):
         """
-        Fit XGBoost model, and measure accuracy (accuracy, balanced accuracy,
-        ROC-AUC, and compare predicted to observed thrombolysis rates).
+        Fit XGBoost model, and measure accuracy (accuracy, balanced accuracy, ROC-AUC, and compare
+        predicted to observed thrombolysis rates).
         """
 
         # Define and Fit model
