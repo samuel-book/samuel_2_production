@@ -4,14 +4,14 @@ channels:
 dependencies:
   - jupyter
   - jupyterlab
-  - matplotlib=3.4
-  - numpy=1.23
+  - matplotlib
+  - numpy
   - pip
-  - pandas=1.5
-  - python=3.8
+  - pandas=
+  - python=3.10
   - scikit-learn
   - pip:
     - pylatex
-    - shap==0.41
+    - shap
     - stroke-outcome
-    - xgboost==1.5
+    - xgboost
