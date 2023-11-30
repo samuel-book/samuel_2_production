@@ -1,5 +1,6 @@
 import pandas as pd
 import pylatex as pl
+from pylatex.utils import italic
 
 
 class GlobalReport():
@@ -43,17 +44,17 @@ class GlobalReport():
                    f'The year range of the data was {min_year:0.0f}-{max_year:0.0f}. ' +
                    'The proportion of patients arriving within 4 hours of known onset was ' +
                    f'{arrival_4hr:0.2f}. ' +
-                   'The fraction of each data field that was complete is shown in the table below')
+                   'The fraction of each data field that was complete is shown in  table 1.\n')
 
             self.doc.append(txt)
-            self.doc.append(pl.Command('vspace', '2mm'))
+            self.doc.append('\n')
 
             # Add info on completion
             df = pd.read_csv(
                 './output/full_data_complete.csv', index_col='field')
 
+            self.doc.append(italic('Table 1: Completion of SSNAP data in data used.'))
             with self.doc.create(pl.LongTable('l c')) as table:
-                table.add_row(['Completion of SSNAP data in data used', ''])
                 table.add_hline()
                 table.add_row([df.index.name] + list(df.columns))
                 table.add_hline()
@@ -71,9 +72,8 @@ class GlobalReport():
             df['admissions'] = df['admissions'].round(0)
             df = df.T
 
+            self.doc.append(italic('Table 2: Variation in key statistics across all stroke teams.'))
             with self.doc.create(pl.LongTable('l c c c c c c c c')) as table:
-                table.add_row(['Variation of key statistics across all stroke teams', '', '', '',
-                               '', '', '', '', ''])
                 table.add_hline()
                 table.add_row([df.index.name] + list(df.columns))
                 table.add_hline()

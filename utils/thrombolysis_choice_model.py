@@ -154,7 +154,7 @@ class ThrombolysisChoiceModel:
             'precise_onset_known',
             'prior_disability',
             'afib_anticoagulant',
-            'age'
+            'age',
         ]
 
         self.stroke_teams = list(data['stroke_team'].unique())
@@ -176,6 +176,7 @@ class ThrombolysisChoiceModel:
         self.X_test_one_hot = pd.concat([self.X_test, X_test_hosp], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
         self.X_test.to_csv('./output/thrombolysis_choice_feature_values.csv')
+
 
     def estimate_benchmark_rates(self):
         """
