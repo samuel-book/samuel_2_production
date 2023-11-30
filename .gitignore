@@ -1,7 +1,7 @@
 # Folders to ignore
-/admin
 _build/
 data/
+experiments/
 temp/
 output/
 models/
