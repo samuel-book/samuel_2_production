@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pickle
 import shap
 
 from sklearn.metrics import auc
@@ -321,6 +322,10 @@ class ThrombolysisChoiceModel:
         # Define and Fit model
         self.model = XGBClassifier(verbosity=0, seed=42, learning_rate=0.5)
         self.model.fit(self.X_train_one_hot, self.y_train)
+
+        # Pickle model and save to pickled_models folder
+        pickle.dump(self.model, open('./pickled_models/thrombolysis_choice_model.pkl', 'wb'))
+        
         # Get predictions for test set
         y_pred_proba = self.model.predict_proba(self.X_test_one_hot)[:, 1]
         y_pred = y_pred_proba >= 0.5
