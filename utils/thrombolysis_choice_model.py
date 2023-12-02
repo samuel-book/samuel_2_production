@@ -196,17 +196,19 @@ class ThrombolysisChoiceModel:
             mask = all_X[f'team_{hospital}'] == 1
             selected_data = all_X[mask].copy()
             # Remove hospital one hot encode
-            selected_data[f'team_{hospital}'] = 0
-            # Loop through benchamrk hospitals
+            selected_data[f'team_{hospital}'] = False
+            # Loop through benchmark hospitals
             decisions = []
             for benchmark_hosp in benchmark_hospitals:
                 # Change one-hot encoding
-                selected_data[f'team_{benchmark_hosp}'] = 1
+                selected_data[f'team_{benchmark_hosp}'] = True
                 # Get predictions
                 decisions.append(self.model.predict(selected_data))
-                benchmark = np.array(decisions).mean(axis=0) >= 0.5
                 # Reset hospital
-                selected_data[f'team_{benchmark_hosp}'] = 0
+                selected_data[f'team_{benchmark_hosp}'] = False
+            # Get majority vote
+            decisions = np.array(decisions)
+            benchmark = decisions.mean(axis=0) >= 0.5
             results[hospital] = np.mean(benchmark)
 
         self.benchmark_thrombolysis = \

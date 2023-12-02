@@ -17,13 +17,13 @@ class DataProcess:
 
     """
 
-    def __init__(self, year_min=2016, year_max=2021):
+    def __init__(self, year_min=2016, year_max=2021, limit_to_ambo=False):
         """
         Creates the data load object
         """
 
         # Default to limit to ambulance arrivals
-        self.limit_to_ambo = True
+        self.limit_to_ambo = limit_to_ambo
 
         # List fields for ML; some are created in `create_ml_data`
         self.machine_learning_fields = [

@@ -352,7 +352,8 @@ class Pathway:
         hospital_performance = self.hospital_performance_original.copy()
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        hospital_performance['eligable'] = hospital_performance['benchmark'].values
+        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        hospital_performance['eligable'] *= benchmark_adjustment
         # Get results
         results = self.model_ssnap_pathway_scenarios(hospital_performance)
         results['scenario'] = 'benchmark'
@@ -402,7 +403,8 @@ class Pathway:
         # Merge in benchmark rates (to ensure order is correct)
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        hospital_performance['eligable'] = hospital_performance['benchmark'].values
+        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        hospital_performance['eligable'] *= benchmark_adjustment
         # Get results
         results = self.model_ssnap_pathway_scenarios(hospital_performance)
         results['scenario'] = 'speed_benchmark'
@@ -428,7 +430,8 @@ class Pathway:
         # Merge in benchmark rates (to ensure order is correct)
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        hospital_performance['eligable'] = hospital_performance['benchmark'].values
+        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        hospital_performance['eligable'] *= benchmark_adjustment
         # Get results
         results = self.model_ssnap_pathway_scenarios(hospital_performance)
         results['scenario'] = 'onset_benchmark'
@@ -453,7 +456,8 @@ class Pathway:
         # Merge in benchmark rates (to ensure order is correct)
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        hospital_performance['eligable'] = hospital_performance['benchmark'].values
+        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        hospital_performance['eligable'] *= benchmark_adjustment
         # Speed
         hospital_performance['scan_within_4_hrs'] = 0.95
         hospital_performance['arrival_scan_arrival_mins_mu'] = np.log(15)
