@@ -6,6 +6,7 @@ temp/
 output/
 models/
 /reports
+pickled_models/
 
 # Ignore file types that may contain data or models
 *.p
