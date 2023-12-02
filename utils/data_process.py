@@ -225,6 +225,9 @@ class DataProcess:
         df['scan_needle_mins_mu'] = scan_needle_mins_mu
         df['scan_needle_mins_sigma'] = scan_needle_mins_sigma
 
+        # Sort df by stroke_team
+        df.sort_values(by=['stroke_team'], inplace=True)
+
         # Save to csv
         self.pathway_simulation_parameters = df
         self.pathway_simulation_parameters.to_csv(
