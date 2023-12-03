@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from math import sqrt
@@ -298,6 +299,44 @@ class Pathway:
 
         return results_df
     
+
+    def plot_summary_results(self):
+
+        """Plot and save overall simulation results"""
+
+        fig = plt.figure(figsize=(10,7))
+
+        x = list(self.summary_sim_results.index)
+        # Replace all _ in x with + for plotting
+        x = [i.replace('_', '+') for i in x]
+
+        ax1 = fig.add_subplot(121)        
+        y1 = self.summary_sim_results['Percent_Thrombolysis'].values
+        ax1.bar(x,y1)
+        ax1.set_ylim(0,20)
+        plt.xticks(rotation=90)
+        plt.yticks(np.arange(0,22,2))
+        ax1.set_title('Thrombolysis use (%)')
+        ax1.set_ylabel('Thrombolysis use (%)')
+        ax1.set_xlabel('Scenario')
+        ax1.grid(axis = 'y')
+
+        ax2 = fig.add_subplot(122)
+        y1 = self.summary_sim_results['Additional_good_outcomes_per_1000_patients'].values
+        ax2.bar(x,y1, color='r')
+        ax2.set_ylim(0,20)
+        plt.xticks(rotation=90)
+        plt.yticks(np.arange(0,22,2))
+        ax2.set_title('Additional good outcomes\nper 1,000 admissions')
+        ax2.set_ylabel('Additional good outcomes\nper 1,000 admissions')
+        ax2.set_xlabel('Scenario')
+        ax2.grid(axis = 'y')
+
+        plt.tight_layout(pad=2)
+
+        plt.savefig('./output/sim_results_summary.jpg', dpi=300)
+        plt.close()
+
     def run(self):
         """Model scenarios"""
 
@@ -470,18 +509,26 @@ class Pathway:
         # Add to results_all
         self.sim_results = pd.concat([self.sim_results, results], axis=0)
 
+        # Merge in admission numbers
+        self.sim_results = self.sim_results.merge(
+            self.hospital_performance_original[['stroke_team', 'admissions']],
+            left_index=True, right_on='stroke_team', how='left')
+        
+        # Average over stroke teams
+        columns = ['scenario',
+                   'Percent_Thrombolysis_(mean)', 
+                   'Additional_good_outcomes_per_1000_patients_(mean)']
+        df = self.sim_results[columns].groupby('scenario').mean()
+        self.summary_sim_results = \
+            df.rename(columns={'Percent_Thrombolysis_(mean)': 'Percent_Thrombolysis',
+            'Additional_good_outcomes_per_1000_patients_(mean)': 'Additional_good_outcomes_per_1000_patients'}).round(2)
+        
+        # Plot 
+        self.plot_summary_results()
 
-
-
-
-
-
-
-
-
-
-
-
+        # Save results
+        self.sim_results.to_csv('./output/sim_results_all.csv', index=True)
+        self.summary_sim_results.to_csv('./output/sim_results_summary.csv', index=True)
 
 
 

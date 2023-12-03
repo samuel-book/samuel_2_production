@@ -131,7 +131,7 @@ class DataProcess:
         Calculate parameters for pathway simulation
         """
 
-            # Set up results lists
+        # Set up results lists
         stroke_team = []
         admissions = []
         age_80_plus = []
@@ -232,16 +232,3 @@ class DataProcess:
         self.pathway_simulation_parameters = df
         self.pathway_simulation_parameters.to_csv(
             './data/data_for_sim/data_for_sim.csv', index=False)
-    
-
-
-
-
-
-
-
-
-
-
-
-

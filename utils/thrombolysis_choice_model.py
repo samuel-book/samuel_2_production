@@ -282,6 +282,9 @@ class ThrombolysisChoiceModel:
         ax.set_ylabel('Count')
         plt.savefig('./output/thrombolysis_choice_hopsital_shap.jpg', dpi=300,
                     bbox_inches='tight', pad_inches=0.2)
+        
+        plt.close()
+
 
     def plot_shap_scatter(self):
 
@@ -303,6 +306,9 @@ class ThrombolysisChoiceModel:
 
         fig.savefig('output/thrombolysis_choice_shap_scatter.jpg',
                     dpi=300, bbox_inches='tight', pad_inches=0.2)
+        
+        plt.close()
+
 
     def run(self):
         """
