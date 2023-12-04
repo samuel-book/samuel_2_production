@@ -62,71 +62,9 @@ class DataProcess:
 
 
 
-    def create_ml_data(self):
-        """
-        Added data processing for thrombolysis choice and outcome models
-        """
-        # Copy full data
-        self.ml_data = self.full_data.copy()
-
-        # Limit to 4 hours onset to arrival
-        mask = self.ml_data['onset_to_arrival_time'] <= 240
-        self.ml_data = self.ml_data[mask]
-
-        # Limit to 6 hours arrival to scan
-        mask = self.ml_data['arrival_to_scan_time'] <= 360
-        self.ml_data = self.ml_data[mask]
-
-        # Limit to known discharge disability
-        mask = self.ml_data['discharge_disability'] >= 0
-        self.ml_data = self.ml_data[mask]
-
-        # Replace afib_anticoagulant NaN with 0
-        self.ml_data['afib_anticoagulant'].fillna(0, inplace=True)
-
-        # Limit to patients who have had scan
-        mask = self.ml_data['arrival_to_scan_time'] >= 0
-        self.ml_data = self.ml_data[mask]
-
-        # Calculate onset to scan
-        def f(row):
-            return row['arrival_to_scan_time'] + row['onset_to_arrival_time']
-        self.ml_data['onset_to_scan'] = self.ml_data.apply(f, axis=1)
-
-        # Calculate onset to thrombolysis (return -10 for no thrombolysis)
-        def f(row):
-            if row['scan_to_thrombolysis_time'] >= 0:
-                return row['scan_to_thrombolysis_time'] + row['onset_to_arrival_time']
-            else:
-                return -10
-        self.ml_data['onset_to_thrombolysis'] = self.ml_data.apply(f, axis=1)
-
-        # Get any diagnosis of atrial fibrillation
-        def f(row):
-            if (row['atrial_fibrillation'] == 1) or (row['new_afib_diagnosis'] == 1):
-                return 1
-            else:
-                return 0
-        self.ml_data['any_afib_diagnosis'] = self.ml_data.apply(f, axis=1)
-
-        # Limit to required fields
-        self.ml_data = self.ml_data[self.machine_learning_fields]
-
-        # Shuffle data
-        self.ml_data = self.ml_data.sample(
-            frac=1, random_state=42).reset_index(drop=True)
-
-        # Save complete data
-        self.ml_data.to_csv('./data/data_for_ml/complete_ml_data.csv', index=False)
-
-        # Print lengths of output
-        len_all = len(self.full_data)
-        len_ml = len(self.ml_data)
-        frac = len_ml / len_all
-        print(f'All rows: {len_all}, ML rows:{len_ml}, Fraction: {frac:0.2f}')
 
     
-    def calculate_paramters_for_pathway_simulation(self):
+    def calculate_parameters_for_pathway_simulation(self):
         """
         Calculate parameters for pathway simulation
         """
@@ -232,3 +170,81 @@ class DataProcess:
         self.pathway_simulation_parameters = df
         self.pathway_simulation_parameters.to_csv(
             './data/data_for_sim/data_for_sim.csv', index=False)
+        
+        # Save stroke teams to csv
+        df = pd.DataFrame()
+        df['stroke_team'] = stroke_team
+        df.sort_values(by=['stroke_team'], inplace=True)
+        df.to_csv('./output/stroke_teams.csv', index=False)
+
+
+    def create_ml_data(self):
+        """
+        Added data processing for thrombolysis choice and outcome models
+        """
+        # Copy full data
+        self.ml_data = self.full_data.copy()
+
+        # Limit to 4 hours onset to arrival
+        mask = self.ml_data['onset_to_arrival_time'] <= 240
+        self.ml_data = self.ml_data[mask]
+
+        # Limit to 6 hours arrival to scan
+        mask = self.ml_data['arrival_to_scan_time'] <= 360
+        self.ml_data = self.ml_data[mask]
+
+        # Limit to known discharge disability
+        mask = self.ml_data['discharge_disability'] >= 0
+        self.ml_data = self.ml_data[mask]
+
+        # Replace afib_anticoagulant NaN with 0
+        self.ml_data['afib_anticoagulant'].fillna(0, inplace=True)
+
+        # Limit to patients who have had scan
+        mask = self.ml_data['arrival_to_scan_time'] >= 0
+        self.ml_data = self.ml_data[mask]
+
+        # Calculate onset to scan
+        def f(row):
+            return row['arrival_to_scan_time'] + row['onset_to_arrival_time']
+        self.ml_data['onset_to_scan'] = self.ml_data.apply(f, axis=1)
+
+        # Calculate onset to thrombolysis (return -10 for no thrombolysis)
+        def f(row):
+            if row['scan_to_thrombolysis_time'] >= 0:
+                return row['scan_to_thrombolysis_time'] + row['onset_to_arrival_time']
+            else:
+                return -10
+        self.ml_data['onset_to_thrombolysis'] = self.ml_data.apply(f, axis=1)
+
+        # Get any diagnosis of atrial fibrillation
+        def f(row):
+            if (row['atrial_fibrillation'] == 1) or (row['new_afib_diagnosis'] == 1):
+                return 1
+            else:
+                return 0
+        self.ml_data['any_afib_diagnosis'] = self.ml_data.apply(f, axis=1)
+
+        # Limit to required fields
+        self.ml_data = self.ml_data[self.machine_learning_fields]
+
+        # Shuffle data
+        self.ml_data = self.ml_data.sample(
+            frac=1, random_state=42).reset_index(drop=True)
+
+        # Save complete data
+        self.ml_data.to_csv('./data/data_for_ml/complete_ml_data.csv', index=False)
+
+        # Print lengths of output
+        len_all = len(self.full_data)
+        len_ml = len(self.ml_data)
+        frac = len_ml / len_all
+        print(f'All rows: {len_all}, ML rows:{len_ml}, Fraction: {frac:0.2f}')
+
+
+    def run(self):
+        """
+        Run all methods
+        """
+        self.calculate_parameters_for_pathway_simulation()
+        self.create_ml_data()

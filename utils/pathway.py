@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from math import sqrt
 from scipy import stats 
-from stroke_outcome.continuous_outcome import Continuous_outcome
 
 class Pathway:
 
