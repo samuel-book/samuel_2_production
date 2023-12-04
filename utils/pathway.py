@@ -13,9 +13,6 @@ class Pathway:
         # Store base case data    
         self.hospital_performance_original = base_case_data
 
-        # Initalise outcome model
-        self.outcome = Continuous_outcome()
-        
         # Set number of trials
         self.trials = trials
 
