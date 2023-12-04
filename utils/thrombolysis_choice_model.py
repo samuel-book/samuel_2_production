@@ -8,6 +8,7 @@ from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
 from xgboost import XGBClassifier
 
 
@@ -140,6 +141,9 @@ class ThrombolysisChoiceModel:
         data = pd.read_csv(
                 './data/data_for_ml/complete_ml_data.csv', low_memory=False)
         
+        self.prototype_patients = pd.read_csv('./data/data_for_ml/ml_patient_prototypes.csv',
+                                              index_col='Patient prototype')
+        
         self.thrombolysis_rates = data.groupby('stroke_team').mean()['thrombolysis']
         self.thrombolysis_rates.sort_index(inplace=True)
 
@@ -162,19 +166,26 @@ class ThrombolysisChoiceModel:
 
         self.X = data[self.X_fields]
         self.y = data['thrombolysis']
+        self.prototype_patients = self.prototype_patients[self.X_fields]
+
 
         # Split 75:25
         strat = data['stroke_team'].map(str) + '-' + data['thrombolysis'].map(str)
         self.X_train, self.X_test, self.y_train, self.y_test = \
             train_test_split(self.X, self.y, test_size=0.25, stratify=strat, random_state=42)
 
-        # One hot encode hospitals
-        X_train_hosp = pd.get_dummies(self.X_train['stroke_team'], prefix='team')
-        self.X_train_one_hot = pd.concat([self.X_train, X_train_hosp], axis=1)
+        # One hot encode stroke teams using OneHotEncoder with self.stroke_teams as categories
+        encoder = OneHotEncoder(categories=[self.stroke_teams], sparse=False)
+        encoder.fit(self.X_train[['stroke_team']])
+        one_hot_encoded = encoder.transform(self.X_train[['stroke_team']])
+        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.X_train.index)
+        self.X_train_one_hot = pd.concat([self.X_train, one_hot_encoded_df], axis=1)
         self.X_train_one_hot.drop('stroke_team', axis=1, inplace=True)
-        X_test_hosp = pd.get_dummies(self.X_test['stroke_team'], prefix='team')
-        self.X_test_one_hot = pd.concat([self.X_test, X_test_hosp], axis=1)
+        one_hot_encoded = encoder.transform(self.X_test[['stroke_team']])
+        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.X_test.index)
+        self.X_test_one_hot = pd.concat([self.X_test, one_hot_encoded_df], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
+
         self.X_test.to_csv('./output/thrombolysis_choice_feature_values.csv')
 
 
@@ -192,19 +203,19 @@ class ThrombolysisChoiceModel:
 
         # Loop through each hospital and get their patients
         for hospital in self.stroke_teams:
-            mask = all_X[f'team_{hospital}'] == 1
+            mask = all_X[f'{hospital}'] == 1
             selected_data = all_X[mask].copy()
             # Remove hospital one hot encode
-            selected_data[f'team_{hospital}'] = False
+            selected_data[f'{hospital}'] = False
             # Loop through benchmark hospitals
             decisions = []
             for benchmark_hosp in benchmark_hospitals:
                 # Change one-hot encoding
-                selected_data[f'team_{benchmark_hosp}'] = True
+                selected_data[f'{benchmark_hosp}'] = True
                 # Get predictions
                 decisions.append(self.model.predict(selected_data))
                 # Reset hospital
-                selected_data[f'team_{benchmark_hosp}'] = False
+                selected_data[f'{benchmark_hosp}'] = False
             # Get majority vote
             decisions = np.array(decisions)
             benchmark = decisions.mean(axis=0) >= 0.5
@@ -233,9 +244,8 @@ class ThrombolysisChoiceModel:
             self.shap_values, columns=list(self.X_test_one_hot))
 
         # Sum hospital SHAPs
-        teams = [hosp for hosp in list(self.X_train_one_hot) if hosp[0:4] == 'team']
-        self.shap_values_df['hospital'] = self.shap_values_df[teams].sum(axis=1)
-        for team in teams:
+        self.shap_values_df['hospital'] = self.shap_values_df[self.stroke_teams].sum(axis=1)
+        for team in self.stroke_teams:
             self.shap_values_df.drop(team, axis=1, inplace=True)
 
         # Add total SHAP
@@ -269,6 +279,7 @@ class ThrombolysisChoiceModel:
         self.shap_values_df.drop('stroke_team', axis=1, inplace=True)
         self.shap_values_df = self.shap_values_df.round(4)
         self.shap_values_df.to_csv('./output/thrombolysis_choice_shap.csv')
+
 
     def plot_hospital_shap(self):
 
@@ -309,6 +320,41 @@ class ThrombolysisChoiceModel:
         
         plt.close()
 
+    
+    def predict_prototype_patients(self):
+        """
+        Predict use of thrombolysis at each hospital for each prototype patient.
+        """
+
+        # Set up data input
+        X = self.prototype_patients.copy()
+        df = pd.DataFrame(columns=self.stroke_teams, index=self.prototype_patients.index)
+        df.fillna(0, inplace=True)
+        X = pd.concat([X, df], axis=1)
+        X.drop('stroke_team', axis=1, inplace=True)
+
+        # Set up results dictioanry
+        results = {}
+
+        # Loop through each hospital
+        for hospital in self.stroke_teams:
+            X[f'{hospital}'] = 1
+            y_pred_proba = self.model.predict_proba(X)[:, 1]
+            X[f'{hospital}'] = 0
+            results[hospital] = y_pred_proba
+
+        # Store and save results    
+        self.prototype_patient_predictions = pd.DataFrame(
+            results, index=self.prototype_patients.index).T
+        # Add in whether hospital is benchmark
+        self.prototype_patient_predictions['benchmark'] = \
+            self.hospital_mean_shap['benchmark']
+        
+        # Save
+        self.prototype_patient_predictions.to_csv(
+            './output/thrombolysis_choice_prototype_patients.csv')
+
+
 
     def run(self):
         """
@@ -320,6 +366,7 @@ class ThrombolysisChoiceModel:
         self.estimate_benchmark_rates()
         self.plot_shap_scatter()
         self.plot_hospital_shap()
+        self.predict_prototype_patients()
 
     def train_model(self):
         """
