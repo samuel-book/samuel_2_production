@@ -331,7 +331,7 @@ class ThrombolysisChoiceModel:
         df = pd.DataFrame(columns=self.stroke_teams, index=self.prototype_patients.index)
         df.fillna(0, inplace=True)
         X = pd.concat([X, df], axis=1)
-        X.drop('stroke_team', axis=1, inplace=True)
+        X = X.drop('stroke_team', axis=1)
 
         # Set up results dictioanry
         results = {}
@@ -352,7 +352,7 @@ class ThrombolysisChoiceModel:
         
         # Save
         self.prototype_patient_predictions.to_csv(
-            './output/thrombolysis_choice_prototype_patients.csv')
+            './output/thrombolysis_choice_prototype_patients.csv', index_label='Stroke team')
 
 
 

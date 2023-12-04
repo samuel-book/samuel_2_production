@@ -20,15 +20,19 @@ class StrokeTeamReporting():
         Import data for the stroke team
         """
 
-        try:
-            self.sim_results = pd.read_csv('./output/sim_results_all.csv')
-            mask = self.sim_results['stroke_team'] == self.team_name
-            self.sim_results = self.sim_results[mask]
-        except:
-            raise ValueError('No simulation results found. Run simulation first.')
+        # Sim results
+        self.sim_results = pd.read_csv('./output/sim_results_all.csv')
+        mask = self.sim_results['stroke_team'] == self.team_name
+        self.sim_results = self.sim_results[mask]
+
+        # Prototype patients
+        self.prototype_patients = pd.read_csv(
+            './data/data_for_ml/ml_patient_prototypes.csv', index_col='Patient prototype')
+        self.prototype_patients_results = pd.read_csv(
+            './output/thrombolysis_choice_prototype_patients.csv', index_col='Stroke team')
+
         
-        
-    def plot_improvement(self, ax=None, **kwargs):
+    def plot_improvement(self):
         """
         Plot improvement in outcomes with changes
         """
@@ -67,5 +71,42 @@ class StrokeTeamReporting():
         fig.suptitle(f'Potential improvement for {self.team_name}')
 
         fig.tight_layout(pad=2)
+
+        return fig
+
+
+    def show_prototype_patients(self):
+
+        benchmark_results = pd.DataFrame()
+
+        # Get benchmark probabilities
+        mask = self.prototype_patients_results['benchmark'] == 1
+        df = self.prototype_patients_results[mask].mean(axis=0)
+        df = df.drop('benchmark')
+        benchmark_results['Benchmark'] = df
+
+        # Get focus hospitals results
+        mask = self.prototype_patients_results.index == self.team_name
+        df = self.prototype_patients_results[mask]
+        benchmark_results[f'{self.team_name}'] = df.T
+
+        # Make percentages
+        benchmark_results = benchmark_results*100
+        benchmark_results = benchmark_results.astype(int)
+
+        # Plot as vertical bar chart
+        fig = plt.figure(figsize=(7, 5))
+        ax = fig.add_subplot(111)
+        benchmark_results.plot.bar(ax=ax)
+        ax.set_ylim(0,100)
+        ax.set_ylabel('Probability of receiving thrombolysis(%)')
+        ax.set_xlabel('Patient prototype')
+        ax.set_title(f'Probability of thrombolysis for {self.team_name}')
+        ax.grid(axis = 'y')
+
+        plt.close()
+
+
+
 
         return fig
