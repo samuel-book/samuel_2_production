@@ -519,11 +519,11 @@ class Pathway:
             df.rename(columns={'Percent_Thrombolysis_(mean)': 'Percent_Thrombolysis',
             'Additional_good_outcomes_per_1000_patients_(mean)': 'Additional_good_outcomes_per_1000_patients'}).round(2)
         
-        # Plot 
+        # Plot
         self.plot_summary_results()
 
         # Save results
-        self.sim_results.to_csv('./output/sim_results_all.csv', index=True)
+        self.sim_results.to_csv('./output/sim_results_all.csv', index=False)
         self.summary_sim_results.to_csv('./output/sim_results_summary.csv', index=True)
 
 
