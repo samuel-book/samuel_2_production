@@ -17,17 +17,15 @@ class DataProcess:
 
     """
 
-    def __init__(self, year_min=2016, year_max=2021, limit_to_ambo=False):
+    def __init__(self, year_min=2016, year_max=2100, limit_to_ambo=False):
         """
         Creates the data load object
         """
 
-        # Default to limit to ambulance arrivals
-        self.limit_to_ambo = limit_to_ambo
-
         # List fields for ML; some are created in `create_ml_data`
         self.machine_learning_fields = [
             'stroke_team',
+            'arrive_by_ambulance',
             'onset_to_arrival_time',
             'onset_during_sleep',
             'arrival_to_scan_time',
@@ -56,12 +54,9 @@ class DataProcess:
         self.full_data = self.full_data[mask]
 
         # Limit to ambulance arrivals if required
-        if self.limit_to_ambo:
+        if limit_to_ambo:
             mask = self.full_data['arrive_by_ambulance'] == 1
             self.full_data = self.full_data[mask]
-
-
-
 
     
     def calculate_parameters_for_pathway_simulation(self):

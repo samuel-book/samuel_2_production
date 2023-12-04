@@ -63,14 +63,9 @@ class StrokeTeamReporting():
         ax2.set_xlabel('Scenario')
         ax2.grid(axis = 'y')
 
-        # Set a title abobe both figures
+        # Set a title above both figures
         fig.suptitle(f'Potential improvement for {self.team_name}')
 
         fig.tight_layout(pad=2)
 
         return fig
-
-
-        
-
-        

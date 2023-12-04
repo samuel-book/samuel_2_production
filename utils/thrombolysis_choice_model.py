@@ -136,11 +136,10 @@ class ThrombolysisChoiceModel:
         Load data for modelling, get observed thrombolysis rates, split into X and y, and one-hot
         encode stroke team.
         """
-
         # Load data
         data = pd.read_csv(
                 './data/data_for_ml/complete_ml_data.csv', low_memory=False)
-
+        
         self.thrombolysis_rates = data.groupby('stroke_team').mean()['thrombolysis']
         self.thrombolysis_rates.sort_index(inplace=True)
 
@@ -218,6 +217,7 @@ class ThrombolysisChoiceModel:
         self.benchmark_thrombolysis = self.benchmark_thrombolysis.round(3)
         self.benchmark_thrombolysis.to_csv('./output/benchmark_thrombolysis_rates.csv')
 
+    
     def get_shap(self):
 
         """
