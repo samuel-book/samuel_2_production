@@ -95,13 +95,17 @@ class StrokeTeamReporting():
         benchmark_results = benchmark_results.astype(int)
 
         # Plot as vertical bar chart
-        fig = plt.figure(figsize=(7, 5))
+
+        labels = [i.replace('+', '+\n') for i in list(self.prototype_patients.index)]
+
+        fig = plt.figure(figsize=(10, 6))
         ax = fig.add_subplot(111)
         benchmark_results.plot.bar(ax=ax)
         ax.set_ylim(0,100)
-        ax.set_ylabel('Probability of receiving thrombolysis(%)')
-        ax.set_xlabel('Patient prototype')
-        ax.set_title(f'Probability of thrombolysis for {self.team_name}')
+        ax.set_ylabel('% Patients likely to receive thrombolysis(%)')
+        # rebuild the xticklabels
+        ax.set_xticklabels(labels, rotation=90)
+        ax.set_title(f'Percentage of patients likely to receive thrombolysis\n({self.team_name})')
         ax.grid(axis = 'y')
 
         plt.close()
