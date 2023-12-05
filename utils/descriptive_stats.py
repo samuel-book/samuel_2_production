@@ -17,6 +17,12 @@ class DescriptiveStatistics:
         # Add fields
         self.full_data['onset_within_4hrs'] = \
             self.full_data['onset_to_arrival_time'] <= 240
+        self.full_data['prior_disability_0-2'] = \
+            self.full_data['prior_disability'] < 3
+        self.full_data['discharge_disability_0-2'] = \
+            self.full_data['discharge_disability'] < 3
+        self.full_data['discharge_disability_5-6'] = \
+            self.full_data['discharge_disability'] > 4
 
         # Save completeion
         complete = pd.DataFrame()
@@ -32,22 +38,26 @@ class DescriptiveStatistics:
         self.fields_for_average_statistics = {
             'age': 'mean',
             'male': 'mean',
+            'prior_disability': 'mean',
+            'prior_disability_0-2': 'mean',
+            'stroke_severity': 'mean',
             'onset_known': 'mean',
+            'onset_to_arrival_time': 'median',
             'onset_within_4hrs': 'mean',
             'precise_onset_known': 'mean',
             'onset_during_sleep': 'mean',
             'arrive_by_ambulance': 'mean',
-            'prior_disability': 'mean',
-            'stroke_severity': 'mean',
-            'death': 'mean',
-            'discharge_disability': 'mean',
-            'thrombolysis': 'mean',
             'call_to_ambulance_arrival_time': 'median',
             'ambulance_on_scene_time': 'median',
             'ambulance_travel_to_hospital_time': 'median',
             'arrival_to_scan_time': 'median',
+            'thrombolysis': 'mean',
             'scan_to_thrombolysis_time': 'median',
-            'onset_to_arrival_time': 'median'
+            'discharge_disability': 'mean',
+            'discharge_disability_0-2': 'mean',
+            'discharge_disability_5-6': 'mean',
+            'death': 'mean'
+            
         }
 
         # Summary
@@ -81,7 +91,32 @@ class DescriptiveStatistics:
         self.hopsital_stats_all_arrivals.index.name = 'stroke_team'
 
         # Save
-        self.hopsital_stats_all_arrivals.to_csv('./output/hopspital_stats.csv')
+        self.hopsital_stats_all_arrivals.to_csv('./output/hospital_stats.csv')
+
+        # Repeat for four hour arrivals
+        mask = self.full_data['onset_to_arrival_time'] <= 240
+
+        self.hopsital_stats_4hr_arrivals = dict()
+
+        grouped = self.full_data[mask].groupby('stroke_team')
+        for name, group in grouped:
+            stats = dict()
+            stats['admissions'] = len(group)
+            for field in self.fields_for_average_statistics.keys():
+                if self.fields_for_average_statistics[field] == 'mean':
+                    stats[field] = group[field].mean()
+                elif self.fields_for_average_statistics[field] == 'median':
+                    stats[field] = group[field].median()
+            self.hopsital_stats_4hr_arrivals[name] = stats
+
+        # Convert to DataFrame
+        self.hopsital_stats_4hr_arrivals = \
+            pd.DataFrame.from_dict(self.hopsital_stats_4hr_arrivals).T.round(2)
+        self.hopsital_stats_4hr_arrivals.index.name = 'stroke_team'
+
+        # Save
+        self.hopsital_stats_4hr_arrivals.to_csv('./output/hospital_stats_4hr_arrivals.csv')
+
 
     def run(self):
         self.calculate_average_statistics()

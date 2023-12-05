@@ -15,10 +15,58 @@ class StrokeTeamReporting():
         self.import_data()
 
 
+    def calculate_descriptive_stats(self):
+
+        """Calculate descriptive stats for the stroke team"""
+
+        # Create summary for all arrivals
+        self.descriptive_summary = self.descriptive_stats.describe().T[['25%', '50%', '75%']]
+        rename_dict = {'25%': 'All teams 1Q', '50%': 'All teams median', '75%': 'All teams 3Q'}
+        self.descriptive_summary = self.descriptive_summary.rename(columns=rename_dict)
+        self.descriptive_summary[f'{self.team_name}'] = self.descriptive_stats.loc[self.team_name]
+
+        # Create summary for 4hr arrivals
+        df = self.descriptive_stats_4hr.describe().T[['25%', '50%', '75%']]
+        rename_dict = {'25%': 'All teams 1Q (4hr)',
+                       '50%': 'All teams median (4hr)',
+                       '75%': 'All teams 3Q (4hr)'}
+        df = df.rename(columns=rename_dict)
+        df[f'{self.team_name} (4hr)'] = self.descriptive_stats_4hr.loc[self.team_name]
+
+        # Concatenate
+        self.descriptive_summary = pd.concat([self.descriptive_summary, df], axis=1)
+
+        # Convert admissions to yearly admissions
+        self.descriptive_summary.loc['admissions'] /= self.years
+        self.descriptive_summary.loc['admissions'] = \
+            self.descriptive_summary.loc['admissions'].astype(int)
+        
+        # Order index
+        order = ['admissions', 'age', 'male', 'prior_disability', 'prior_disability_0-2',
+                 'onset_during_sleep', 'onset_known','precise_onset_known', 'onset_to_arrival_time',
+                 'onset_within_4hrs', 'stroke_severity', 'arrive_by_ambulance', 
+                 'call_to_ambulance_arrival_time', 'ambulance_on_scene_time',
+                 'ambulance_travel_to_hospital_time', 'arrival_to_scan_time', 'thrombolysis',
+                 'scan_to_thrombolysis_time', 'discharge_disability', 'discharge_disability_0-2',
+                 'discharge_disability_5-6', 'death']
+        
+        #self.descriptive_summary = self.descriptive_summary.reindex(order)
+
+
+        return self.descriptive_summary
+
+
+
     def import_data(self):
         """
         Import data for the stroke team
         """
+
+        # Descriptive stats
+        self.descriptive_stats = pd.read_csv(
+            './output/hospital_stats.csv', index_col='stroke_team')
+        self.descriptive_stats_4hr = pd.read_csv(
+            './output/hospital_stats_4hr_arrivals.csv', index_col='stroke_team')
 
         # Sim results
         self.sim_results = pd.read_csv('./output/sim_results_all.csv')
@@ -30,6 +78,12 @@ class StrokeTeamReporting():
             './data/data_for_ml/ml_patient_prototypes.csv', index_col='Patient prototype')
         self.prototype_patients_results = pd.read_csv(
             './output/thrombolysis_choice_prototype_patients.csv', index_col='Stroke team')
+        
+        # Data info
+        self.info = pd.read_csv('./output/stats_summary.csv', index_col='field')
+        self.years = self.info.loc['max year'] - self.info.loc['min year']
+        self.years = self.years[0]
+
 
         
     def plot_improvement(self):
@@ -74,7 +128,7 @@ class StrokeTeamReporting():
 
         return fig
 
-
+    
     def show_prototype_patients(self):
 
         benchmark_results = pd.DataFrame()

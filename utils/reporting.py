@@ -67,7 +67,7 @@ class GlobalReport():
             # Add summary of hospital statistics
 
             df = pd.read_csv(
-                './output/hopspital_stats.csv', index_col='stroke_team')
+                './output/hospital_stats.csv', index_col='stroke_team')
             df = df.describe().round(3)
             df['admissions'] = df['admissions'].round(0)
             df = df.T
