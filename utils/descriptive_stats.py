@@ -91,7 +91,7 @@ class DescriptiveStatistics:
         self.hopsital_stats_all_arrivals.index.name = 'stroke_team'
 
         # Save
-        self.hopsital_stats_all_arrivals.to_csv('./output/hospital_stats.csv')
+        self.hopsital_stats_all_arrivals.to_csv('./output/hospital_stats_all_arrivals.csv')
 
         # Repeat for four hour arrivals
         mask = self.full_data['onset_to_arrival_time'] <= 240

@@ -13,6 +13,7 @@ class StrokeTeamReporting():
         """
         self.team_name = team_name
         self.import_data()
+        self.calculate_descriptive_stats()
 
 
     def calculate_descriptive_stats(self):
@@ -20,26 +21,30 @@ class StrokeTeamReporting():
         """Calculate descriptive stats for the stroke team"""
 
         # Create summary for all arrivals
-        self.descriptive_summary = self.descriptive_stats.describe().T[['25%', '50%', '75%']]
+        self.descriptive_summary_all = self.descriptive_stats.describe().T[['25%', '50%', '75%']]
         rename_dict = {'25%': 'All teams 1Q', '50%': 'All teams median', '75%': 'All teams 3Q'}
-        self.descriptive_summary = self.descriptive_summary.rename(columns=rename_dict)
-        self.descriptive_summary[f'{self.team_name}'] = self.descriptive_stats.loc[self.team_name]
+        self.descriptive_summary_all = self.descriptive_summary_all.rename(columns=rename_dict)
+        self.descriptive_summary_all[f'{self.team_name}'] = \
+            self.descriptive_stats.loc[self.team_name]
 
         # Create summary for 4hr arrivals
-        df = self.descriptive_stats_4hr.describe().T[['25%', '50%', '75%']]
-        rename_dict = {'25%': 'All teams 1Q (4hr)',
-                       '50%': 'All teams median (4hr)',
-                       '75%': 'All teams 3Q (4hr)'}
-        df = df.rename(columns=rename_dict)
-        df[f'{self.team_name} (4hr)'] = self.descriptive_stats_4hr.loc[self.team_name]
+        self.descriptive_summary_4hrs = \
+            self.descriptive_stats_4hr.describe().T[['25%', '50%', '75%']]
+        rename_dict = {'25%': 'All teams 1Q', '50%': 'All teams median', '75%': 'All teams 3Q'}
+        self.descriptive_summary_4hrs = self.descriptive_summary_4hrs.rename(columns=rename_dict)
+        self.descriptive_summary_4hrs[f'{self.team_name}'] = \
+            self.descriptive_stats_4hr.loc[self.team_name]
 
-        # Concatenate
-        self.descriptive_summary = pd.concat([self.descriptive_summary, df], axis=1)
 
         # Convert admissions to yearly admissions
-        self.descriptive_summary.loc['admissions'] /= self.years
-        self.descriptive_summary.loc['admissions'] = \
-            self.descriptive_summary.loc['admissions'].astype(int)
+        self.descriptive_summary_all.loc['admissions'] /= self.years
+        self.descriptive_summary_all.loc['admissions'] = \
+            self.descriptive_summary_all.loc['admissions'].astype(int)
+        
+        self.descriptive_summary_4hrs.loc['admissions'] /= self.years
+        self.descriptive_summary_4hrs.loc['admissions'] = \
+            self.descriptive_summary_4hrs.loc['admissions'].astype(int)
+        
         
         # Order index
         order = ['admissions', 'age', 'male', 'prior_disability', 'prior_disability_0-2',
@@ -52,8 +57,9 @@ class StrokeTeamReporting():
         
         #self.descriptive_summary = self.descriptive_summary.reindex(order)
 
-
-        return self.descriptive_summary
+        # Save
+        self.descriptive_summary_all.to_csv('./output/descriptive_summary_all.csv')
+        self.descriptive_summary_4hrs.to_csv('./output/descriptive_summary_4hrs.csv')
 
 
 
@@ -64,7 +70,7 @@ class StrokeTeamReporting():
 
         # Descriptive stats
         self.descriptive_stats = pd.read_csv(
-            './output/hospital_stats.csv', index_col='stroke_team')
+            './output/hospital_stats_all_arrivals.csv', index_col='stroke_team')
         self.descriptive_stats_4hr = pd.read_csv(
             './output/hospital_stats_4hr_arrivals.csv', index_col='stroke_team')
 
@@ -81,11 +87,11 @@ class StrokeTeamReporting():
         
         # Data info
         self.info = pd.read_csv('./output/stats_summary.csv', index_col='field')
-        self.years = self.info.loc['max year'] - self.info.loc['min year']
-        self.years = self.years[0]
+        self.year_min = self.info.loc['min year'][0]
+        self.year_max = self.info.loc['max year'][0]
+        self.years = self.year_max - self.year_min + 1
 
 
-        
     def plot_improvement(self):
         """
         Plot improvement in outcomes with changes
