@@ -112,9 +112,10 @@ class DescriptiveStatistics:
         # Convert to DataFrame
         self.hopsital_stats_4hr_arrivals = \
             pd.DataFrame.from_dict(self.hopsital_stats_4hr_arrivals).T.round(2)
-        self.hopsital_stats_4hr_arrivals.index.name = 'stroke_team'
+        self.hopsital_stats_4hr_arrivals.index.name = 'stroke_team'        
 
         # Save
+        self.hopsital_stats_4hr_arrivals = self.hopsital_stats_4hr_arrivals.round(2)
         self.hopsital_stats_4hr_arrivals.to_csv('./output/hospital_stats_4hr_arrivals.csv')
 
 
