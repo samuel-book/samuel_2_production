@@ -389,7 +389,9 @@ class ThrombolysisChoiceModel:
         self.y_pred_proba_df['predicted'] = y_pred * 1
         self.y_pred_proba_df['observed'] = self.y_test.values
 
-        self.y_pred_proba_df.to_csv('./output/thrombolysis_choice_test_predictions.csv')
+        self.y_pred_proba_df.to_csv(
+            './output/thrombolysis_choice_test_predictions.csv', index=False)
+        
         # Get accuracy of test set
         accuracy = metrics.accuracy_score(self.y_test, y_pred)
         print(f'Accuracy: {accuracy:0.3f}')
