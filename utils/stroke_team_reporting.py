@@ -158,7 +158,7 @@ class StrokeTeamReporting():
 
         labels = [i.replace('+', '+\n') for i in list(self.prototype_patients.index)]
 
-        fig = plt.figure(figsize=(12, 6))
+        fig = plt.figure(figsize=(15, 7))
         ax = fig.add_subplot(111)
         benchmark_results.plot.bar(ax=ax)
         ax.set_ylim(0,100)
