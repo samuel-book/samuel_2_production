@@ -55,8 +55,8 @@ class DescriptiveStatistics:
             'scan_to_thrombolysis_time': 'median',
             'discharge_disability': 'mean',
             'discharge_disability_0-2': 'mean',
-            'discharge_disability_5-6': 'mean',
-            'death': 'mean'
+            'discharge_disability_5-6': 'mean'
+            #'death': 'mean'
             
         }
 
