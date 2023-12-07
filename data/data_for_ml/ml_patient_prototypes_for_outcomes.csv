@@ -1,2 +1,2 @@
-Patient prototype,prior_disability,stroke_severity,onset_to_thrombolysis,age,precise_onset_known,any_afib_diagnosis,infarction
-Moderate,0,15,120,72.5,1,0,1
+Patient prototype,stroke_team,prior_disability,stroke_severity,onset_to_thrombolysis,age,precise_onset_known,any_afib_diagnosis,infarction
+Moderate,Salford Royal Hospital,0,15,120,72.5,1,0,1

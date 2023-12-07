@@ -36,10 +36,11 @@ class OutcomeModel():
             './data/data_for_ml/ml_patient_prototypes_for_outcomes.csv',
             index_col='Patient prototype')
         
-        # Get X and y
+         # Get X and y
         self.X_fields = [
             'prior_disability',
             'stroke_severity',
+            'stroke_team',
             'onset_to_thrombolysis',
             'age',
             'precise_onset_known',
@@ -59,9 +60,20 @@ class OutcomeModel():
         self.X_train, self.X_test, self.y_train, self.y_test = \
             train_test_split(self.X, self.y, test_size=0.25, stratify=strat, random_state=42)
 
-        # Save
-        self.X_test.to_csv('./output/thrombolysis_outcome_feature_values.csv')
+        # One hot encode stroke teams using OneHotEncoder with self.stroke_teams as categories
+        encoder = OneHotEncoder(categories=[self.stroke_teams], sparse=False)
+        encoder.fit(self.X_train[['stroke_team']])
+        one_hot_encoded = encoder.transform(self.X_train[['stroke_team']])
+        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.X_train.index)
+        self.X_train_one_hot = pd.concat([self.X_train, one_hot_encoded_df], axis=1)
+        self.X_train_one_hot.drop('stroke_team', axis=1, inplace=True)
+        one_hot_encoded = encoder.transform(self.X_test[['stroke_team']])
+        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.X_test.index)
+        self.X_test_one_hot = pd.concat([self.X_test, one_hot_encoded_df], axis=1)
+        self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
 
+        # save
+        self.X_test.to_csv('./output/thrombolysis_outcome_feature_values.csv')
     
     def run(self):
         """
@@ -79,8 +91,8 @@ class OutcomeModel():
         """
 
         # Get predicted probabilities
-        y_probs = self.model.predict_proba(self.X_test)
-        y_pred = self.model.predict(self.X_test)
+        y_probs = self.model.predict_proba(self.X_test_one_hot)
+        y_pred = self.model.predict(self.X_test_one_hot)
 
         # Plot confusion matrix
         cm = confusion_matrix(self.y_test.astype(np.int8), y_pred)
@@ -115,7 +127,7 @@ class OutcomeModel():
 
         # Define and Fit model
         self.model = XGBClassifier(verbosity=0, seed=42)
-        self.model.fit(self.X_train, self.y_train)
+        self.model.fit(self.X_train_one_hot, self.y_train)
 
         # Pickle model and save to pickled_models folder
         pickle.dump(self.model, open('./pickled_models/thrombolysis_choice_model.pkl', 'wb'))
