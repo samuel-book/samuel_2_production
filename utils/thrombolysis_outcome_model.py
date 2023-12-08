@@ -72,8 +72,31 @@ class OutcomeModel():
         self.X_test_one_hot = pd.concat([self.X_test, one_hot_encoded_df], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
 
+        # One hot encode prototype patients
+        one_hot_encoded = encoder.transform(self.prototype_patients[['stroke_team']])
+        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.prototype_patients.index)
+        self.prototype_patients_one_hot = pd.concat([self.prototype_patients, one_hot_encoded_df], axis=1)
+        self.prototype_patients_one_hot.drop('stroke_team', axis=1, inplace=True)
+
+
         # save
         self.X_test.to_csv('./output/thrombolysis_outcome_feature_values.csv')
+
+
+    def predict_prototype_patients(self):
+        """
+        Predict outcomes for prototype patients with and without thrombolysis
+        """
+        self.prototype_patients_outcomes_treated = \
+            self.model.predict_proba(self.prototype_patients_one_hot)
+        
+        untreated_patients  = self.prototype_patients_one_hot.copy()
+        untreated_patients['onset_to_thrombolysis'] = -10
+        untreated_patients['onset_to_thrombolysis']
+        self.prototype_patients_outcomes_untreated = \
+            self.model.predict_proba(untreated_patients)
+        
+
     
     def run(self):
         """
@@ -82,6 +105,7 @@ class OutcomeModel():
 
         self.train_model()
         self.test_model()
+        self.predict_prototype_patients()
 
     
     def test_model(self):

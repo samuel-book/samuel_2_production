@@ -1,2 +1,4 @@
 Patient prototype,stroke_team,prior_disability,stroke_severity,onset_to_thrombolysis,age,precise_onset_known,any_afib_diagnosis,infarction
-Moderate,Salford Royal Hospital,0,15,120,72.5,1,0,1
+Mild,Salford Royal Hospital,0,3,90,72.5,1,0,1
+Moderate,Salford Royal Hospital,0,15,90,72.5,1,0,1
+Moderate imprecise,Salford Royal Hospital,0,15,90,72.5,0,0,1
