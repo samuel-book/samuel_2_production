@@ -104,6 +104,10 @@ class Pathway:
     
         # Iterate through hospitals
         for scenario_counter, run_data in hospital_performance.iterrows():
+
+            # Skip if admissions less than 100
+            if run_data['admissions'] < 100:
+                continue
         
             # Set up trial results dataframe
             trial_df = pd.DataFrame(columns=trial_columns)
