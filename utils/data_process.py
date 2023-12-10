@@ -40,6 +40,7 @@ class DataProcess:
             'age',
             'onset_to_thrombolysis',
             'thrombolysis',
+            'thrombectomy',
             'scan_to_thrombolysis_time',
             'discharge_disability'
         ]
