@@ -47,7 +47,7 @@ class StrokeTeamReporting():
         
         
         # Order index
-        order = ['admissions', 'age', 'male', 'prior_disability', 'prior_disability_0-2',
+        order = ['admissions', 'age', 'age > 80', 'male', 'prior_disability', 'prior_disability_0-2',
                  'onset_during_sleep', 'onset_known','precise_onset_known', 'onset_to_arrival_time',
                  'onset_within_4hrs', 'stroke_severity', 'arrive_by_ambulance', 
                  'call_to_ambulance_arrival_time', 'ambulance_on_scene_time',

@@ -23,7 +23,9 @@ class DescriptiveStatistics:
             self.full_data['discharge_disability'] < 3
         self.full_data['discharge_disability_5-6'] = \
             self.full_data['discharge_disability'] > 4
-
+        self.full_data['age > 80'] = \
+            self.full_data['age'] > 80
+        
         # Save completeion
         complete = pd.DataFrame()
         complete['complete'] = self.full_data.count()/len(self.full_data)
@@ -37,6 +39,7 @@ class DescriptiveStatistics:
         # List fields for averages
         self.fields_for_average_statistics = {
             'age': 'mean',
+            'age > 80': 'mean',
             'male': 'mean',
             'prior_disability': 'mean',
             'prior_disability_0-2': 'mean',
