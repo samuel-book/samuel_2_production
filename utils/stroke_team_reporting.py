@@ -122,7 +122,7 @@ class StrokeTeamReporting():
         ax2.set_ylim(0,20)
         plt.xticks(rotation=90)
         plt.yticks(np.arange(0,22,2))
-        ax2.set_title('Additional good outcomes\nper 1,000 admissions')
+        ax2.set_title('Additional good outcomes (mRS 0-1)\nper 1,000 admissions')
         ax2.set_ylabel('Additional good outcomes\nper 1,000 admissions')
         ax2.set_xlabel('Scenario')
         ax2.grid(axis = 'y')
