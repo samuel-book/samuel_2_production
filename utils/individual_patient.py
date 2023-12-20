@@ -157,13 +157,15 @@ class IndividualPatientModel:
         ax.errorbar(x-0.2, self.untreated_dist, yerr=self.untreated_dist_ci, fmt='none', ecolor='black', capsize=2)
         ax.errorbar(x+0.2, self.treated_dist, yerr=self.treated_dist_ci, fmt='none', ecolor='black', capsize=2)
 
+        ax.set_xticks(x)
+        ax.set_xticklabels(x)
         ax.legend()
         ax.set_xlabel('Discharge disability (mRS)')
         ax.set_ylabel('Probability')
         ax.set_title('Discharge disability\nprobability distribution')
 
 
-            # Plot cumulative values for treated and untreated
+        # Plot cumulative values for treated and untreated
         ax = fig.add_subplot(133)
         x = np.arange(7)
         untreated_cum = np.cumsum(self.untreated_dist)
@@ -190,8 +192,6 @@ class IndividualPatientModel:
         plt.subplots_adjust(wspace=0.3)
         plt.close()
         self.results_fig = fig
-
-
 
 
     def predict_patient(self, patient_data):
@@ -343,6 +343,7 @@ class IndividualPatientModel:
         self.improvement_ci= sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)        
         # Call plotting function
         self.plot_patient_results(patient)
+        return self.results_fig
         
 
     def train_models(self, replicates):
