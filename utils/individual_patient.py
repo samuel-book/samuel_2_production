@@ -90,6 +90,110 @@ class IndividualPatientModel:
         self.outcome_models = pickle.load(open('./pickled_models/replicate_outcome_models.pkl', 'rb'))
 
 
+    def plot_patient_results(self, patient, save=False):
+
+        fig = plt.figure(figsize=(15, 6))
+
+        # Add patient dictionary as a text box
+        ax = fig.add_subplot(131)
+        patient_dict = patient.iloc[0].to_dict()
+        patient_text = 'PATIENT CHARACTERISTICS\n\n'
+
+        patient_text = patient_text + (
+            '\n'.join([f'{k}: {v}' for k, v in patient_dict.items()]))
+        
+
+        # Add thrombolysis choice prediction
+        patient_text += f'\n\n\nTHROMBOLYSIS CHOICE\n'
+        patient_text += f'\nModel prediction = {self.thrombolysis_prediction:0.2f} '
+        patient_text += f'({self.thrombolysis_prediction_ci:0.2f})'
+        patient_text += f'\nBenchmark prediction = {self.thrombolysis_choice_benchmark_mean:0.2f}'
+
+        patient_text = patient_text + f'\n\n\nLIKELY OUTCOME\n'
+
+        v = self.untreated_weighted_mrs
+        ci = self.untreated_weighted_mrs_ci
+        patient_text += f'\nUntreated weighted mRS = {v:0.2f} ({ci:0.2f})'
+        v = self.treated_weighted_mrs
+        ci = self.treated_weighted_mrs_ci
+        patient_text += f'\nTreated weighted mRS = {v:0.2f} ({ci:0.2f})'
+        v = self.improvement
+        c1 = self.improvement_ci
+        patient_text += f'\nmRS improvement = {v:0.2f} ({c1:0.2f})'
+
+        v = self.untreated_less_3
+        c1 = self.untreated_less_3_ci
+        patient_text += f'\n\nUntreated proportion mRS 0-2 = {v:0.2f} ({c1:0.2f})'
+        v = self.treated_less_3
+        c1 = self.treated_less_3_ci
+        patient_text += f'\nTreated proportion mRS 0-2 = {v:0.2f} ({c1:0.2f})'
+        v = self.change_in_less_3
+        c1 = self.change_in_less_3_ci
+        patient_text += f'\nChange in proportion mRS 0-2 = {v:0.2f} ({c1:0.2f})'
+
+        v = self.untreated_more_4
+        c1 = self.untreated_more_4_ci
+        patient_text += f'\n\nUntreated proportion mRS 5-6 = {v:0.2f} ({c1:0.2f})'
+        v = self.treated_more_4
+        c1 = self.treated_more_4_ci
+        patient_text += f'\nTreated proportion mRS 5-6 = {v:0.2f} ({c1:0.2f})'
+        v = self.change_in_more_4
+        c1 = self.change_in_more_4_ci
+        patient_text += f'\nChange in proportion mRS 5-6 = {v:0.2f} ({c1:0.2f})'
+
+        ax.text(0.02, 1.07, patient_text, transform=ax.transAxes, fontsize=9,
+                verticalalignment='top')
+
+        # Remove all axes
+        ax.axis('off')
+
+        # Plot outcomes
+        ax = fig.add_subplot(132)
+        x = np.arange(7)
+        ax.bar(x-0.2, self.untreated_dist, 
+            color='red', label=f'Untreated', linewidth=1, linestyle='--', width=0.4, alpha=0.7)
+        ax.bar(x+0.2, self.treated_dist,
+            color='blue', label=f'Treated', linewidth=1, linestyle='--', width=0.4, alpha=0.7)
+        ax.errorbar(x-0.2, self.untreated_dist, yerr=self.untreated_dist_ci, fmt='none', ecolor='black', capsize=2)
+        ax.errorbar(x+0.2, self.treated_dist, yerr=self.treated_dist_ci, fmt='none', ecolor='black', capsize=2)
+
+        ax.legend()
+        ax.set_xlabel('Discharge disability (mRS)')
+        ax.set_ylabel('Probability')
+        ax.set_title('Discharge disability\nprobability distribution')
+
+
+            # Plot cumulative values for treated and untreated
+        ax = fig.add_subplot(133)
+        x = np.arange(7)
+        untreated_cum = np.cumsum(self.untreated_dist)
+        treated_cum = np.cumsum(self.treated_dist)
+        ax.plot(x, untreated_cum, color='red', label=f'Untreated', linewidth=1, linestyle=':', alpha=0.7)
+        ax.plot(x, treated_cum, color='blue', label=f'Treated', linewidth=1, linestyle='--', alpha=0.7)
+        # Fil the difference between the lines
+        ax.fill_between(x, untreated_cum, treated_cum, where=treated_cum >= untreated_cum, 
+                        facecolor='blue', interpolate=True, alpha=0.2)
+        ax.fill_between(x, untreated_cum, treated_cum, where=treated_cum <= untreated_cum,
+                        facecolor='red', interpolate=True, alpha=0.2)
+        ax.legend()
+        ax.set_xlabel('Discharge disability (mRS)')
+        ax.set_ylabel('Cumulative probability')
+        ax.grid(axis='y', linestyle='--', alpha=0.5)
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+        ax.set_title('Cumulative probability\nof discharge disability')
+
+        txt  = 'Shaded area:\nBlue: Treated better\nRed: Untreated better'
+        ax.text(0.48, 0.05, txt, transform=ax.transAxes, fontsize=9, verticalalignment='bottom',
+                bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.5'))
+
+        # Add gaps between figures
+        plt.subplots_adjust(wspace=0.3)
+        plt.close()
+        self.results_fig = fig
+
+
+
+
     def predict_patient(self, patient_data):
 
         patient = pd.DataFrame(patient_data, index=[0])
@@ -110,10 +214,8 @@ class IndividualPatientModel:
         thrombolysis_predictions = np.array(thrombolysis_predictions)
         self.thrombolysis_prediction = np.mean(thrombolysis_predictions)
         self.thrombolysis_prediction_std = np.std(thrombolysis_predictions)
-        # Calculate 95% CI
-        self.thrombolysis_prediction_ci = scipy.stats.norm.interval(
-            0.95, loc=self.thrombolysis_prediction, scale=self.thrombolysis_prediction_std)
-
+        sem = self.thrombolysis_prediction_std / np.sqrt(len(thrombolysis_predictions))
+        self.thrombolysis_prediction_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., len(thrombolysis_predictions)-1)
 
         # Get benchmark thrombolysis predictions
         benchmark_predictions = []
@@ -135,9 +237,8 @@ class IndividualPatientModel:
         
         self.thrombolysis_choice_benchmark_mean = np.mean(benchmark_predictions)
         self.thrombolysis_choice_benchmark_std = np.std(benchmark_predictions)
-        # Calculate 95% CI
-        self.thrombolysis_choice_benchmark_ci = scipy.stats.norm.interval(
-            0.95, loc=self.thrombolysis_choice_benchmark_mean, scale=self.thrombolysis_choice_benchmark_std)
+        sem = self.thrombolysis_choice_benchmark_std / np.sqrt(len(benchmark_predictions))
+        self.thrombolysis_choice_benchmark_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., len(benchmark_predictions)-1)
 
         # Get thrombolysis outcome prediction
         untreated_dist = []
@@ -162,8 +263,8 @@ class IndividualPatientModel:
     
         for i in range(len(self.outcome_models)):        
         # Get untreated and treated distributions
-            untreated = self.outcome_models[i].predict_proba(p_untreated)
-            treated = self.outcome_models[i].predict_proba(p_treated)
+            untreated = self.outcome_models[i].predict_proba(p_untreated).flatten()
+            treated = self.outcome_models[i].predict_proba(p_treated).flatten()
             untreated_dist.append(untreated)
             treated_dist.append(treated)
             # Get weighted average of mRS scores
@@ -179,18 +280,18 @@ class IndividualPatientModel:
             untreated_more_4.append(np.sum(untreated[5:]))
             treated_more_4.append(np.sum(treated[5:]))
 
-        # Get mean predictions
+        # Get mean distribution predictions
         untreated_dist = np.array(untreated_dist)
         treated_dist = np.array(treated_dist)
         self.untreated_dist = np.mean(untreated_dist, axis=0)
         self.treated_dist = np.mean(treated_dist, axis=0)
         self.untreated_dist_std = np.std(untreated_dist, axis=0)
         self.treated_dist_std = np.std(treated_dist, axis=0)
-        # Calculate 95% CI
-        self.untreated_dist_ci = scipy.stats.norm.interval(
-            0.95, loc=self.untreated_dist, scale=self.untreated_dist_std)
-        self.treated_dist_ci = scipy.stats.norm.interval(
-            0.95, loc=self.treated_dist, scale=self.treated_dist_std)
+        n = len(self.outcome_models)
+        sem = self.untreated_dist_std / np.sqrt(n)
+        self.untreated_dist_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
+        sem = self.treated_dist_std / np.sqrt(n)
+        self.treated_dist_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
         # Get mean predictions for mRS <3
         untreated_less_3 = np.array(untreated_less_3)
         treated_less_3 = np.array(treated_less_3)
@@ -198,11 +299,15 @@ class IndividualPatientModel:
         self.treated_less_3 = np.mean(treated_less_3)
         self.untreated_less_3_std = np.std(untreated_less_3)
         self.treated_less_3_std = np.std(treated_less_3)
-        # Calculate 95% CI
-        self.untreated_less_3_ci = scipy.stats.norm.interval(
-            0.95, loc=self.untreated_less_3, scale=self.untreated_less_3_std)
-        self.treated_less_3_ci = scipy.stats.norm.interval(
-            0.95, loc=self.treated_less_3, scale=self.treated_less_3_std)
+        sem = self.untreated_less_3_std / np.sqrt(n)
+        self.untreated_less_3_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
+        sem = self.treated_less_3_std / np.sqrt(n)
+        self.treated_less_3_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
+        # Get change in proportion mRS <3
+        self.change_in_less_3 = np.mean(self.treated_less_3 - self.untreated_less_3)
+        self.change_in_less_3_std = np.std(self.treated_less_3 - self.untreated_less_3)
+        sem = self.change_in_less_3_std / np.sqrt(n)
+        self.change_in_less_3_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)         
         # Get mean predictions for mRS >4
         untreated_more_4 = np.array(untreated_more_4)
         treated_more_4 = np.array(treated_more_4)
@@ -210,26 +315,34 @@ class IndividualPatientModel:
         self.treated_more_4 = np.mean(treated_more_4)
         self.untreated_more_4_std = np.std(untreated_more_4)
         self.treated_more_4_std = np.std(treated_more_4)
-        # Calculate 95% CI
-        self.untreated_more_4_ci = scipy.stats.norm.interval(
-            0.95, loc=self.untreated_more_4, scale=self.untreated_more_4_std)
-        self.treated_more_4_ci = scipy.stats.norm.interval(
-            0.95, loc=self.treated_more_4, scale=self.treated_more_4_std)
+        sem = self.untreated_more_4_std / np.sqrt(n)
+        self.untreated_more_4_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)        
+        sem = self.treated_more_4_std / np.sqrt(n)
+        self.treated_more_4_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
+        # Get change in proportion mRS >4
+        self.change_in_more_4 = np.mean(self.treated_more_4 - self.untreated_more_4)
+        self.change_in_more_4_std = np.std(self.treated_more_4 - self.untreated_more_4)
+        sem = self.change_in_more_4_std / np.sqrt(n)
+        self.change_in_more_4_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
         # Get mean predictions for weighted mRS
         untreated_weighted_mrs = np.array(untreated_weighted_mrs)
         treated_weighted_mrs = np.array(treated_weighted_mrs)
         self.untreated_weighted_mrs = np.mean(untreated_weighted_mrs)
         self.treated_weighted_mrs = np.mean(treated_weighted_mrs)
-        # Calculate 95% CI
-        self.untreated_weighted_mrs_ci = scipy.stats.norm.interval(
-            0.95, loc=self.untreated_weighted_mrs, scale=np.std(untreated_weighted_mrs))
-        self.treated_weighted_mrs_ci = scipy.stats.norm.interval(
-            0.95, loc=self.treated_weighted_mrs, scale=np.std(treated_weighted_mrs))
+        self.untreated_weighted_mrs_std = np.std(untreated_weighted_mrs)
+        self.treated_weighted_mrs_std = np.std(treated_weighted_mrs)
+        sem = self.untreated_weighted_mrs_std / np.sqrt(n)
+        self.untreated_weighted_mrs_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
+        sem = self.treated_weighted_mrs_std / np.sqrt(n)
+        self.treated_weighted_mrs_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)
         # Get mean predictions for improvement
         improvement = np.array(improvement)
         self.improvement = np.mean(improvement)
-        self.improvement_ci = scipy.stats.norm.interval(
-            0.95, loc=self.improvement, scale=np.std(improvement))
+        self.improvement_std = np.std(improvement)
+        sem = self.improvement_std / np.sqrt(n)
+        self.improvement_ci= sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)        
+        # Call plotting function
+        self.plot_patient_results(patient)
         
 
     def train_models(self, replicates):
@@ -271,8 +384,3 @@ class IndividualPatientModel:
             model_full.append(model)
         # Pickle models
         pickle.dump(model_full, open('./pickled_models/replicate_outcome_models.pkl', 'wb'))
-
-
-
-
-
