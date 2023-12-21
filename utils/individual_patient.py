@@ -86,11 +86,13 @@ class IndividualPatientModel:
             self.train_models(replicates)
         
         # Load models
-        self.choice_models = pickle.load(open('./pickled_models/replicate_choice_models.pkl', 'rb'))
-        self.outcome_models = pickle.load(open('./pickled_models/replicate_outcome_models.pkl', 'rb'))
+        self.choice_models = pickle.load(
+            open('./pickled_models/replicate_choice_models.pkl', 'rb'))
+        self.outcome_models = pickle.load(
+            open('./pickled_models/replicate_outcome_models.pkl', 'rb'))
 
 
-    def plot_patient_results(self, patient, save=False):
+    def plot_patient_results(self, patient, save, filename):
 
         fig = plt.figure(figsize=(15, 6))
 
@@ -154,8 +156,10 @@ class IndividualPatientModel:
             color='red', label=f'Untreated', linewidth=1, linestyle='--', width=0.4, alpha=0.7)
         ax.bar(x+0.2, self.treated_dist,
             color='blue', label=f'Treated', linewidth=1, linestyle='--', width=0.4, alpha=0.7)
-        ax.errorbar(x-0.2, self.untreated_dist, yerr=self.untreated_dist_ci, fmt='none', ecolor='black', capsize=2)
-        ax.errorbar(x+0.2, self.treated_dist, yerr=self.treated_dist_ci, fmt='none', ecolor='black', capsize=2)
+        ax.errorbar(x-0.2, self.untreated_dist, yerr=self.untreated_dist_ci, fmt='none',
+                    ecolor='black', capsize=2)
+        ax.errorbar(x+0.2, self.treated_dist, yerr=self.treated_dist_ci, fmt='none',
+                    ecolor='black', capsize=2)
 
         ax.set_xticks(x)
         ax.set_xticklabels(x)
@@ -170,8 +174,10 @@ class IndividualPatientModel:
         x = np.arange(7)
         untreated_cum = np.cumsum(self.untreated_dist)
         treated_cum = np.cumsum(self.treated_dist)
-        ax.plot(x, untreated_cum, color='red', label=f'Untreated', linewidth=1, linestyle=':', alpha=0.7)
-        ax.plot(x, treated_cum, color='blue', label=f'Treated', linewidth=1, linestyle='--', alpha=0.7)
+        ax.plot(x, untreated_cum, color='red', label=f'Untreated', linewidth=1, linestyle=':',
+                alpha=0.7)
+        ax.plot(x, treated_cum, color='blue', label=f'Treated', linewidth=1, linestyle='--',
+                alpha=0.7)
         # Fil the difference between the lines
         ax.fill_between(x, untreated_cum, treated_cum, where=treated_cum >= untreated_cum, 
                         facecolor='blue', interpolate=True, alpha=0.2)
@@ -191,10 +197,16 @@ class IndividualPatientModel:
         # Add gaps between figures
         plt.subplots_adjust(wspace=0.3)
         plt.close()
+
+        # Save to patient_output folder if required
+        if save:
+            fig.savefig(f'./patient_output/{filename}.png', dpi=300)
+
+        # Store figure
         self.results_fig = fig
 
 
-    def predict_patient(self, patient_data):
+    def predict_patient(self, patient_data, save=False, filename=None):
 
         patient = pd.DataFrame(patient_data, index=[0])
 
@@ -215,7 +227,8 @@ class IndividualPatientModel:
         self.thrombolysis_prediction = np.mean(thrombolysis_predictions)
         self.thrombolysis_prediction_std = np.std(thrombolysis_predictions)
         sem = self.thrombolysis_prediction_std / np.sqrt(len(thrombolysis_predictions))
-        self.thrombolysis_prediction_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., len(thrombolysis_predictions)-1)
+        self.thrombolysis_prediction_ci = \
+            sem * scipy.stats.t.ppf((1 + 0.95) / 2., len(thrombolysis_predictions)-1)
 
         # Get benchmark thrombolysis predictions
         benchmark_predictions = []
@@ -238,7 +251,8 @@ class IndividualPatientModel:
         self.thrombolysis_choice_benchmark_mean = np.mean(benchmark_predictions)
         self.thrombolysis_choice_benchmark_std = np.std(benchmark_predictions)
         sem = self.thrombolysis_choice_benchmark_std / np.sqrt(len(benchmark_predictions))
-        self.thrombolysis_choice_benchmark_ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., len(benchmark_predictions)-1)
+        self.thrombolysis_choice_benchmark_ci = \
+            sem * scipy.stats.t.ppf((1 + 0.95) / 2., len(benchmark_predictions)-1)
 
         # Get thrombolysis outcome prediction
         untreated_dist = []
@@ -341,8 +355,9 @@ class IndividualPatientModel:
         self.improvement_std = np.std(improvement)
         sem = self.improvement_std / np.sqrt(n)
         self.improvement_ci= sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)        
+        
         # Call plotting function
-        self.plot_patient_results(patient)
+        self.plot_patient_results(patient, save, filename)
         return self.results_fig
         
 
