@@ -111,10 +111,6 @@ class ArtificialPatientData:
             sample = np.where(df['infarction'] == 0, infarction_0_sample, infarction_1_sample)
             df['stroke_severity'] = sample
 
-            # stroke_severity
-            #sample = np.random.choice(data['stroke_severity'], patients_per_hospital)
-            #df['stroke_severity'] = sample
-
             # prior_disability
             sample = np.random.choice(data['prior_disability'], patients_per_hospital)
             df['prior_disability'] = sample
@@ -162,9 +158,11 @@ class ArtificialPatientData:
         mask = generated_data['infarction'] == 0
         generated_data.loc[mask, 'thrombolysis'] = 0
 
-        # When thrombolysis is 0 set onset_to_thrombolysis_time to -10
+        # When thrombolysis is 0 set onset_to_thrombolysis_time to -10, 
         mask = generated_data['thrombolysis'] == 0
         generated_data.loc[mask, 'onset_to_thrombolysis'] = -10
+        # When thrombolysis is 0 set scan_to_thrombolysis_time to empty
+        generated_data.loc[mask, 'scan_to_thrombolysis_time'] = np.nan        
 
         # Apply outcome model
         X = generated_data[self.X_outcome_fields]
@@ -193,9 +191,12 @@ class ArtificialPatientData:
     
     def train_outcome_model(self):
             
+            # Limit to thrombectomy = 0
+            mask = self.full_data['thrombectomy'] == 0
+            
             # Get X and y
-            X = self.full_data[self.X_outcome_fields]
-            y = self.full_data['discharge_disability']
+            X = self.full_data[mask][self.X_outcome_fields]
+            y = self.full_data[mask]['discharge_disability']
     
             # One hot encode stroke teams using OneHotEncoder with self.stroke_teams as categories
             encoder = OneHotEncoder(categories=[self.stroke_teams], sparse=False)
@@ -210,7 +211,7 @@ class ArtificialPatientData:
             self.outcome_model.fit(X_one_hot, y)
 
     
-    def train_thrombolysis_choice_model(self):
+    def train_thrombolysis_choice_model(self):        
 
         # Get X and y
         X = self.full_data[self.X_thrombolysis_fields]
