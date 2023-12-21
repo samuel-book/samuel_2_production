@@ -235,6 +235,8 @@ class IndividualPatientModel:
         for benchmark_hosp in self.benchmark_hospitals:
             p = patient_choice.copy()
             # Change one-hot encoding
+            current_team = patient_data['stroke_team']
+            p[f'{current_team}'] = False
             p[f'{benchmark_hosp}'] = True
             # Get predictions
             thrombolysis_predictions = []
