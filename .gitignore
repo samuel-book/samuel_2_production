@@ -7,6 +7,7 @@ output/
 models/
 /reports
 pickled_models/
+patient_output/
 
 # Ignore file types that may contain data or models
 *.p
