@@ -77,7 +77,10 @@ class ArtificialPatientData:
 
             # onset_to_arrival_time
             sample = np.random.choice(data['onset_to_arrival_time'], patients_per_hospital)
+            # Round to the closest 5
+            sample = np.round(sample / 5) * 5
             df['onset_to_arrival_time'] = sample
+
 
             # onset_during_sleep
             sample = np.random.choice(data['onset_during_sleep'], patients_per_hospital)
@@ -93,6 +96,8 @@ class ArtificialPatientData:
 
             # arrival_to_scan_time
             sample = np.random.choice(data['arrival_to_scan_time'], patients_per_hospital)
+            # Round to the closest 5
+            sample = np.round(sample / 5) * 5
             df['arrival_to_scan_time'] = sample
 
             # infarction
@@ -125,6 +130,8 @@ class ArtificialPatientData:
             mask = data['scan_to_thrombolysis_time'] > 0
             sample = np.random.choice(
                 data[mask]['scan_to_thrombolysis_time'], patients_per_hospital)
+            # Round to the closest 5
+            sample = np.round(sample / 5) * 5
             df['scan_to_thrombolysis_time'] = sample
 
             # Set onset to thrombolysis time
