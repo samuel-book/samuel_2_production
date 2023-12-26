@@ -128,8 +128,8 @@ class OutcomeModel():
         for i in range(len(cm)):
             for j in range(len(cm[0])):
                 plt.text(i, j, cm[i][j], ha='center', va='center', color='r')
-        ax1.set_xlabel('Predicted value')
-        ax1.set_ylabel('Observed value')
+        ax1.set_xlabel('Predicted mRS')
+        ax1.set_ylabel('Observed mRS')
         # Save
         plt.savefig('./output/thrombolysis_outcome_confusion_matrix.png',
                     dpi=300, bbox_inches='tight')
