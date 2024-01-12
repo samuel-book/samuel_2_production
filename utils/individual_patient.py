@@ -106,12 +106,14 @@ class IndividualPatientModel:
         
 
         # Add thrombolysis choice prediction
-        patient_text += f'\n\n\nTHROMBOLYSIS CHOICE\n'
-        patient_text += f'\nModel prediction = {self.thrombolysis_prediction:0.2f} '
-        patient_text += f'({self.thrombolysis_prediction_ci:0.2f})'
-        patient_text += f'\nBenchmark prediction = {self.thrombolysis_choice_benchmark_mean:0.2f}'
+        patient_text += f'\n\n\nTHROMBOLYSIS CHOICE'
+        patient_text += ' (Of 100 patients like this,\nhow many would receive thrombolysis):\n\n'
+        prediction = np.round(self.thrombolysis_prediction * 100, 0)
+        patient_text += f'This hospital = {prediction:0.0f}\n'
+        prediction = np.round(self.thrombolysis_choice_benchmark_mean * 100, 0)
+        patient_text += f'Benchmark hospitals = {prediction:0.0f}\n'
 
-        patient_text = patient_text + f'\n\n\nLIKELY OUTCOME\n'
+        patient_text = patient_text + f'\n\nLIKELY OUTCOME\n'
 
         v = self.untreated_weighted_mrs
         ci = self.untreated_weighted_mrs_ci
