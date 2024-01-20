@@ -7,7 +7,7 @@ dependencies:
   - matplotlib
   - numpy
   - pip
-  - pandas=
+  - pandas
   - python=3.10
   - scikit-learn
   - pip:

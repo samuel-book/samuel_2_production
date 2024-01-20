@@ -92,13 +92,16 @@ class IndividualPatientModel:
             open('./pickled_models/replicate_outcome_models.pkl', 'rb'))
 
 
-    def plot_patient_results(self, patient, save, filename):
+    def plot_patient_results(self, patient, save, filename, anon):
 
         fig = plt.figure(figsize=(15, 6))
 
         # Add patient dictionary as a text box
         ax = fig.add_subplot(131)
         patient_dict = patient.iloc[0].to_dict()
+        if anon:
+            patient_dict['stroke_team'] = 'ANONYMOUS'
+
         patient_text = 'PATIENT CHARACTERISTICS\n\n'
 
         patient_text = patient_text + (
@@ -208,7 +211,8 @@ class IndividualPatientModel:
         self.results_fig = fig
 
 
-    def predict_patient(self, patient_data, save=False, filename=None):
+    def predict_patient(
+            self, patient_data, save=False, filename=None, anon=False):
 
         patient = pd.DataFrame(patient_data, index=[0])
 
@@ -361,7 +365,7 @@ class IndividualPatientModel:
         self.improvement_ci= sem * scipy.stats.t.ppf((1 + 0.95) / 2., n-1)        
         
         # Call plotting function
-        self.plot_patient_results(patient, save, filename)
+        self.plot_patient_results(patient, save, filename, anon)
         return self.results_fig
         
 
