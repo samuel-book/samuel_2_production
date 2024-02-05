@@ -109,14 +109,14 @@ class IndividualPatientModel:
         
 
         # Add thrombolysis choice prediction
-        patient_text += f'\n\n\nTHROMBOLYSIS CHOICE'
-        patient_text += ' (Of 100 patients like this,\nhow many would receive thrombolysis):\n\n'
+        patient_text += f'\n\n\nTHROMBOLYSIS (IVT) CHOICE:'
+        patient_text += 'Of 100 patients like\nthis, how many would receive IVT:\n\n'
         prediction = np.round(self.thrombolysis_prediction * 100, 0)
         patient_text += f'This hospital = {prediction:0.0f}\n'
         prediction = np.round(self.thrombolysis_choice_benchmark_mean * 100, 0)
         patient_text += f'Benchmark hospitals = {prediction:0.0f}\n'
 
-        patient_text = patient_text + f'\n\nLIKELY OUTCOME\n'
+        patient_text = patient_text + f'\n\nLIKELY OUTCOME (mean ± 95% confidence interval)\n'
 
         v = self.untreated_weighted_mrs
         ci = self.untreated_weighted_mrs_ci
@@ -126,7 +126,7 @@ class IndividualPatientModel:
         patient_text += f'\nTreated weighted mRS = {v:0.2f} ({ci:0.2f})'
         v = self.improvement
         c1 = self.improvement_ci
-        patient_text += f'\nmRS improvement = {v:0.2f} ({c1:0.2f})'
+        patient_text += f'\nmRS improvement due to IVT = {v:0.2f} ({c1:0.2f})'
 
         v = self.untreated_less_3
         c1 = self.untreated_less_3_ci
@@ -136,7 +136,7 @@ class IndividualPatientModel:
         patient_text += f'\nTreated proportion mRS 0-2 = {v:0.2f} ({c1:0.2f})'
         v = self.change_in_less_3
         c1 = self.change_in_less_3_ci
-        patient_text += f'\nChange in proportion mRS 0-2 = {v:0.2f} ({c1:0.2f})'
+        patient_text += f'\nChange in proportion mRS 0-2 due to IVT = {v:0.2f} ({c1:0.2f})'
 
         v = self.untreated_more_4
         c1 = self.untreated_more_4_ci
@@ -146,7 +146,7 @@ class IndividualPatientModel:
         patient_text += f'\nTreated proportion mRS 5-6 = {v:0.2f} ({c1:0.2f})'
         v = self.change_in_more_4
         c1 = self.change_in_more_4_ci
-        patient_text += f'\nChange in proportion mRS 5-6 = {v:0.2f} ({c1:0.2f})'
+        patient_text += f'\nChange in proportion mRS 5-6 due to IVT = {v:0.2f} ({c1:0.2f})'
 
         ax.text(0.02, 1.07, patient_text, transform=ax.transAxes, fontsize=9,
                 verticalalignment='top')
