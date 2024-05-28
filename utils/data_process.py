@@ -190,8 +190,17 @@ class DataProcess:
         mask = self.ml_data['arrival_to_scan_time'] <= 360
         self.ml_data = self.ml_data[mask]
 
+        # Remove records with negative onset_to_arrival_time
+        mask = self.ml_data['onset_to_arrival_time'] <= 0
+        mask = mask == False
+        self.ml_data = self.ml_data[mask]
+
         # Limit to known discharge disability
         mask = self.ml_data['discharge_disability'] >= 0
+        self.ml_data = self.ml_data[mask]
+
+        # Limit to known prior disability
+        mask = self.ml_data['prior_disability'] >= 0
         self.ml_data = self.ml_data[mask]
 
         # Replace afib_anticoagulant NaN with 0
