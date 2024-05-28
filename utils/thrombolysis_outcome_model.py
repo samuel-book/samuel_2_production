@@ -37,12 +37,6 @@ class OutcomeModel():
 
         # Limit to patients with onset to scan of no more than 4 hr 15 minutes
         self.data = self.data[self.data['onset_to_scan'] <= 255]
-
-        self.data = self.data.sample(frac=0.2)
-        
-        self.prototype_patients = pd.read_csv(
-            './data/data_for_ml/ml_patient_prototypes_for_outcomes.csv',
-            index_col='Patient prototype')
         
         self.hospital_stats = pd.read_csv(
             './output/hospital_stats_4hr_arrivals.csv', index_col='stroke_team')
@@ -70,12 +64,11 @@ class OutcomeModel():
 
         self.X = self.data[self.X_fields]
         self.y = self.data['discharge_disability'].values
-        self.prototype_patients = self.prototype_patients[self.X_fields]
 
-        # Split 75:25
+        # Split 80:20
         strat = self.data['discharge_disability'].values
         self.X_train, self.X_test, self.y_train, self.y_test = \
-            train_test_split(self.X, self.y, test_size=0.25, stratify=strat, random_state=42)
+            train_test_split(self.X, self.y, test_size=0.20, stratify=strat, random_state=42)
 
         # One hot encode stroke teams using OneHotEncoder with self.stroke_teams as categories
         encoder = OneHotEncoder(categories=[self.stroke_teams], sparse=False)
@@ -89,72 +82,62 @@ class OutcomeModel():
         self.X_test_one_hot = pd.concat([self.X_test, one_hot_encoded_df], axis=1)
         self.X_test_one_hot.drop('stroke_team', axis=1, inplace=True)
 
-        # One hot encode prototype patients
-        one_hot_encoded = encoder.transform(self.prototype_patients[['stroke_team']])
-        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.prototype_patients.index)
-        self.prototype_patients_one_hot = pd.concat([self.prototype_patients, one_hot_encoded_df], axis=1)
-        self.prototype_patients_one_hot.drop('stroke_team', axis=1, inplace=True)
-
-        # save
-        self.X_test.to_csv('./output/thrombolysis_outcome_feature_values.csv')
-
 
     def predict_all_patients(self):
         """
         Make predictions with and without thrombolysis for all patients and compare outcomes.
         When thrombolysis not used in actual patient use apply hopsital median scan-to-thrombolysis time
         """
-        
-        # One hot encode stroke teams using OneHotEncoder with self.stroke_teams as categories
-        encoder = OneHotEncoder(categories=[self.stroke_teams], sparse=False)
-        encoder.fit(self.X[['stroke_team']])
-        one_hot_encoded = encoder.transform(self.X[['stroke_team']])
-        one_hot_encoded_df = pd.DataFrame(one_hot_encoded, columns=self.stroke_teams, index=self.X.index)
-        self.X_one_hot = pd.concat([self.X, one_hot_encoded_df], axis=1)
-        self.X_one_hot.drop('stroke_team', axis=1, inplace=True)
-
-        # Train on all data (excluding thrombectomy)
-        mask = self.data['thrombectomy'] == 0
-        train_X = self.X_one_hot[mask]
-        train_y = self.y[mask]
-        self.model_all = XGBClassifier(verbosity=0, seed=42, learning_rate=0.5)
-        self.model_all.fit(train_X, train_y)
 
         # Test with all onset_to_thrombolysis set to -10 (no thrombolysis)
+        results = pd.concat([self.X_train, self.X_test])
         data_copy = pd.concat([self.X_train_one_hot, self.X_test_one_hot])
+        results['thrombolysis_given'] = 1.0 * data_copy['onset_to_thrombolysis'] >= 0
         data_copy['onset_to_thrombolysis'] = -10
-        self.all_patients_outcomes_untreated = self.model_all.predict_proba(data_copy)
+        self.all_patients_outcomes_untreated = self.model.predict_proba(data_copy)
         self.all_patients_outcomes_untreated_weighted_mrs = \
             (self.all_patients_outcomes_untreated * np.arange(7)).sum(axis=1)
         self.all_patients_outcomes_untreated_0_to_4 = self.all_patients_outcomes_untreated[:,0:5].sum(axis=1)
+        results['untreated_weighted_mrs'] = self.all_patients_outcomes_untreated_weighted_mrs
+        results['untreated_0_to_4'] = self.all_patients_outcomes_untreated_0_to_4
 
         # Test with all onset_to_thrombolysis set to simulated onset_to_thrombolysis
         data_copy = pd.concat([self.X_train_one_hot, self.X_test_one_hot])
         data_copy['onset_to_thrombolysis'] = self.data['simulated_onset_to_thrombolysis']
-        self.all_patients_outcomes_treated = self.model_all.predict_proba(data_copy)
+        self.all_patients_outcomes_treated = self.model.predict_proba(data_copy)
         self.all_patients_outcomes_treated_weighted_mrs = \
             (self.all_patients_outcomes_treated * np.arange(7)).sum(axis=1)
         self.all_patients_outcomes_treated_0_to_4 = self.all_patients_outcomes_treated[:,0:5].sum(axis=1)
-
+        results['treated_weighted_mrs'] = self.all_patients_outcomes_treated_weighted_mrs
+        results['treated_0_to_4'] = self.all_patients_outcomes_treated_0_to_4
+    
         # Check for improved outcome
         self.all_patients_outcomes_improved = (
             (self.all_patients_outcomes_treated_weighted_mrs <= self.all_patients_outcomes_untreated_weighted_mrs) &
             (self.all_patients_outcomes_treated_0_to_4 >= self.all_patients_outcomes_untreated_0_to_4))
+        results['improved_outcome'] = self.all_patients_outcomes_improved
 
-    
-    def predict_prototype_patients(self):
-        """
-        Predict outcomes for prototype patients with and without thrombolysis
-        """
-        self.prototype_patients_outcomes_treated = \
-            self.model.predict_proba(self.prototype_patients_one_hot)
-        
-        untreated_patients  = self.prototype_patients_one_hot.copy()
-        untreated_patients['onset_to_thrombolysis'] = -10
-        untreated_patients['onset_to_thrombolysis']
-        self.prototype_patients_outcomes_untreated = \
-            self.model.predict_proba(untreated_patients)
-    
+        # Compare outcome with thrombolysis given
+        results['thrombolysis_given_agrees_with_improved_outcome'] = (
+            results['thrombolysis_given'] == results['improved_outcome'])
+        results['thrombolysis_given_and_predicted_good_outcome'] = (
+            (results['thrombolysis_given'] == 1) & (results['improved_outcome'] == 1))
+        results['thrombolysis_given_and_predicted_bad_outcome'] = (
+            (results['thrombolysis_given'] == 1) & (results['improved_outcome'] == 0))
+        results['no_thrombolysis_given_and_predicted_good_outcome'] = (
+            (results['thrombolysis_given'] == 0) & (results['improved_outcome'] == 1))
+        results['no_thrombolysis_given_and_predicted_bad_outcome'] = (
+            (results['thrombolysis_given'] == 0) & (results['improved_outcome'] == 0))
+
+        # Store results
+        results.to_csv('./output/thrombolysis_outcome_predictions.csv', index=False)
+        self.all_patients_outcomes = results
+
+        # Summarise results by stroke_team
+        results_by_team = results.groupby('stroke_team').mean()
+        results_by_team.to_csv('./output/thrombolysis_outcome_predictions_by_team.csv')
+
+     
     def run(self):
         """
         Train model, get SHAP values, and estimate benchmark thrombolysis rates
