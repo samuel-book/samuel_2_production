@@ -60,6 +60,9 @@ class DataProcess:
             mask = self.full_data['arrive_by_ambulance'] == 1
             self.full_data = self.full_data[mask]
 
+        # Remove stroke_team with fewer than 100 patients
+        self.full_data = self.full_data.groupby('stroke_team').filter(lambda x: len(x) >= 100) 
+
     
     def calculate_parameters_for_pathway_simulation(self):
         """

@@ -24,7 +24,7 @@ class OutcomeModel():
 
     """
 
-    def __init__(self):
+    def __init__(self, remove_afib_anticoagulant=False):
         """
         """
 
@@ -34,6 +34,10 @@ class OutcomeModel():
                
         # Remove infarction = 0
         self.data = self.data[self.data['infarction'] == 1]
+
+        # Remove afib_anticoagulant =1
+        if remove_afib_anticoagulant:
+            self.data = self.data[self.data['afib_anticoagulant'] == 0]
 
         # Limit to patients with onset to scan of no more than 4 hr 15 minutes
         self.data = self.data[self.data['onset_to_scan'] <= 255]
@@ -120,13 +124,13 @@ class OutcomeModel():
         # Compare outcome with thrombolysis given
         results['thrombolysis_given_agrees_with_improved_outcome'] = (
             results['thrombolysis_given'] == results['improved_outcome'])
-        results['thrombolysis_given_and_predicted_good_outcome'] = (
+        results['TP'] = (
             (results['thrombolysis_given'] == 1) & (results['improved_outcome'] == 1))
-        results['thrombolysis_given_and_predicted_bad_outcome'] = (
+        results['FP'] = (
             (results['thrombolysis_given'] == 1) & (results['improved_outcome'] == 0))
-        results['no_thrombolysis_given_and_predicted_good_outcome'] = (
+        results['FN'] = (
             (results['thrombolysis_given'] == 0) & (results['improved_outcome'] == 1))
-        results['no_thrombolysis_given_and_predicted_bad_outcome'] = (
+        results['TN'] = (
             (results['thrombolysis_given'] == 0) & (results['improved_outcome'] == 0))
 
         # Store results
@@ -135,7 +139,19 @@ class OutcomeModel():
 
         # Summarise results by stroke_team
         results_by_team = results.groupby('stroke_team').mean()
+        results_by_team['sensitivity'] = \
+            results_by_team['TP'] / (results_by_team['TP'] + results_by_team['FN'])
+        results_by_team['specificity'] = \
+            results_by_team['TN'] / (results_by_team['TN'] + results_by_team['FP'])
+        
+        # Add stroke team ranks for sensitivity and specificity
+        results_by_team['sensitivity_rank'] = results_by_team['sensitivity'].rank(ascending=False)
+        results_by_team['specificity_rank'] = results_by_team['specificity'].rank(ascending=False)
+        
+        # Store results by team
         results_by_team.to_csv('./output/thrombolysis_outcome_predictions_by_team.csv')
+
+
 
      
     def run(self):
