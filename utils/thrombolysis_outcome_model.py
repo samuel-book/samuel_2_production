@@ -24,7 +24,7 @@ class OutcomeModel():
 
     """
 
-    def __init__(self, remove_afib_anticoagulant=False):
+    def __init__(self, remove_afib_anticoagulant=True):
         """
         """
 
@@ -102,8 +102,8 @@ class OutcomeModel():
         self.all_patients_outcomes_untreated_weighted_mrs = \
             (self.all_patients_outcomes_untreated * np.arange(7)).sum(axis=1)
         self.all_patients_outcomes_untreated_0_to_4 = self.all_patients_outcomes_untreated[:,0:5].sum(axis=1)
-        results['untreated_weighted_mrs'] = self.all_patients_outcomes_untreated_weighted_mrs
-        results['untreated_0_to_4'] = self.all_patients_outcomes_untreated_0_to_4
+        results['untreated_weighted_mrs'] = 1.0 * self.all_patients_outcomes_untreated_weighted_mrs
+        results['untreated_0_to_4'] = 1.0 * self.all_patients_outcomes_untreated_0_to_4
 
         # Test with all onset_to_thrombolysis set to simulated onset_to_thrombolysis
         data_copy = pd.concat([self.X_train_one_hot, self.X_test_one_hot])
@@ -114,23 +114,25 @@ class OutcomeModel():
         self.all_patients_outcomes_treated_0_to_4 = self.all_patients_outcomes_treated[:,0:5].sum(axis=1)
         results['treated_weighted_mrs'] = self.all_patients_outcomes_treated_weighted_mrs
         results['treated_0_to_4'] = self.all_patients_outcomes_treated_0_to_4
+        results['change_in_weighted_mrs'] = self.all_patients_outcomes_treated_weighted_mrs - self.all_patients_outcomes_untreated_weighted_mrs
+        results['change_in_mrs_0_to_4'] = self.all_patients_outcomes_treated_0_to_4 - self.all_patients_outcomes_untreated_0_to_4
     
         # Check for improved outcome
         self.all_patients_outcomes_improved = (
             (self.all_patients_outcomes_treated_weighted_mrs <= self.all_patients_outcomes_untreated_weighted_mrs) &
             (self.all_patients_outcomes_treated_0_to_4 >= self.all_patients_outcomes_untreated_0_to_4))
-        results['improved_outcome'] = self.all_patients_outcomes_improved
+        results['improved_outcome'] = 1.0 * self.all_patients_outcomes_improved
 
         # Compare outcome with thrombolysis given
-        results['thrombolysis_given_agrees_with_improved_outcome'] = (
+        results['thrombolysis_given_agrees_with_improved_outcome'] = 1.0 * (
             results['thrombolysis_given'] == results['improved_outcome'])
-        results['TP'] = (
+        results['TP'] = 1.0 * (
             (results['thrombolysis_given'] == 1) & (results['improved_outcome'] == 1))
-        results['FP'] = (
+        results['FP'] = 1.0 * (
             (results['thrombolysis_given'] == 1) & (results['improved_outcome'] == 0))
-        results['FN'] = (
+        results['FN'] = 1.0 * (
             (results['thrombolysis_given'] == 0) & (results['improved_outcome'] == 1))
-        results['TN'] = (
+        results['TN'] = 1.0 * (
             (results['thrombolysis_given'] == 0) & (results['improved_outcome'] == 0))
 
         # Store results
