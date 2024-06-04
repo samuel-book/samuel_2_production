@@ -70,7 +70,7 @@ class ThrombolysisChoiceOutcome():
         self.stroke_team_results.to_csv('./output/thrombolysis_choice_results_by_stroke_team.csv')
 
         # Create separate table of observed and benchmark thrombolysis rates
-        thrombolysis_rates = self.stroke_team_results[[thrombolysis', 'benchmark_decision']]
+        thrombolysis_rates = self.stroke_team_results[['thrombolysis', 'benchmark_decision', 'improved_outcome']]
         thrombolysis_rates.to_csv('./output/thrombolysis_rates.csv')
 
     
