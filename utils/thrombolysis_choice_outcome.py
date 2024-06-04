@@ -53,9 +53,27 @@ class ThrombolysisChoiceOutcome():
         if self.rerun_models:
             self.run_choice_model()
             self.run_outcome_model()    
-        self.patient_results.to_csv('./output/thrombolysis_choice_results.csv')
+            self.patient_results.to_csv('./output/thrombolysis_choice_results.csv')
+
+        self.analyse_results()
 
 
+    def analyse_results(self):
+        """Analyse patient level results"""
+
+        # Load patient results
+        self.patient_results = pd.read_csv('./output/thrombolysis_choice_results.csv', low_memory=False)
+
+        # Average by stroke team
+        self.stroke_team_results = self.patient_results.groupby('stroke_team').mean()
+        self.stroke_team_results.drop('Unnamed: 0', axis=1, inplace=True)
+        self.stroke_team_results.to_csv('./output/thrombolysis_choice_results_by_stroke_team.csv')
+
+        # Create separate table of observed and benchmark thrombolysis rates
+        thrombolysis_rates = self.stroke_team_results[[thrombolysis', 'benchmark_decision']]
+        thrombolysis_rates.to_csv('./output/thrombolysis_rates.csv')
+
+    
     def load_data(self):
 
         """Load required data for modelling."""
@@ -181,7 +199,6 @@ class ThrombolysisChoiceOutcome():
         benchmark = decisions.mean(axis=0) >= 0.5
         benchmark = benchmark * 1
         self.patient_results['benchmark_decision'] = benchmark
-                
         # Save
         shap_values_df.drop('stroke_team', axis=1, inplace=True)
         shap_values_df = shap_values_df.round(3)
@@ -262,4 +279,4 @@ class ThrombolysisChoiceOutcome():
         self.patient_results.loc[mask, 'treated_0_to_4'] = np.nan
         self.patient_results.loc[mask, 'change_in_weighted_mrs'] = np.nan
         self.patient_results.loc[mask, 'change_in_mrs_0_to_4'] = np.nan
-        self.patient_results.loc[mask, 'improved_outcome'] = np.nan
+        self.patient_results.loc[mask, 'improved_outcome'] = 0
