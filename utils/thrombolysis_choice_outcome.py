@@ -46,6 +46,12 @@ class ThrombolysisChoiceOutcome():
 
         self.rerun_models = rerun_models
 
+        # Utilities from Wang X, Moullaali TJ, Li Q, Berge E, Robinson TG, Lindley R, et al.
+        # Utility-Weighted Modified Rankin Scale Scores for the Assessment of Stroke Outcome. 
+        # Stroke. 2020 Aug 1;51(8):2411-7
+
+        self.mrs_utilities = np.array([0.97, 0.88, 0.74, 0.55, 0.20, -0.19, 0.00])
+
     
     def run(self):
         """Run the model."""
@@ -245,31 +251,33 @@ class ThrombolysisChoiceOutcome():
         all_patients_outcomes_untreated = self.outcome_model.predict_proba(X_one_hot)
         all_patients_outcomes_untreated_weighted_mrs = \
             (all_patients_outcomes_untreated * np.arange(7)).sum(axis=1)
-        all_patients_outcomes_untreated_0_to_2 = all_patients_outcomes_untreated[:,0:3].sum(axis=1)
         all_patients_outcomes_untreated_0_to_4 = all_patients_outcomes_untreated[:,0:5].sum(axis=1)
         self.patient_results['untreated_weighted_mrs'] = 1.0 * all_patients_outcomes_untreated_weighted_mrs
-        self.patient_results['untreated_0_to_2'] = 1.0 * all_patients_outcomes_untreated_0_to_2
         self.patient_results['untreated_0_to_4'] = 1.0 * all_patients_outcomes_untreated_0_to_4
+        for i in range(7):
+            self.patient_results[f'untreated_mrs_{i}'] = all_patients_outcomes_untreated[:, i]
+        self.patient_results['untreated_utility'] = (all_patients_outcomes_untreated * self.mrs_utilities).sum(axis=1)
 
         # Test with all onset_to_thrombolysis set to simulated onset_to_thrombolysis
         X_one_hot['onset_to_thrombolysis'] = self.data['simulated_onset_to_thrombolysis']
         all_patients_outcomes_treated = self.outcome_model.predict_proba(X_one_hot)
         all_patients_outcomes_treated_weighted_mrs = \
             (all_patients_outcomes_treated * np.arange(7)).sum(axis=1)
-        all_patients_outcomes_treated_0_to_2 = all_patients_outcomes_treated[:,0:3].sum(axis=1)
         all_patients_outcomes_treated_0_to_4 = all_patients_outcomes_treated[:,0:5].sum(axis=1)
         self.patient_results['treated_weighted_mrs'] = all_patients_outcomes_treated_weighted_mrs
-        self.patient_results['treated_0_to_2'] = all_patients_outcomes_treated_0_to_2
         self.patient_results['treated_0_to_4'] = all_patients_outcomes_treated_0_to_4
+        for i in range(7):
+            self.patient_results[f'treated_mrs_{i}'] = all_patients_outcomes_treated[:, i]
+        self.patient_results['treated_utility'] = (all_patients_outcomes_treated * self.mrs_utilities).sum(axis=1)
 
         # Compare treated and untreated outcomes
         self.patient_results['change_in_weighted_mrs'] = all_patients_outcomes_treated_weighted_mrs - all_patients_outcomes_untreated_weighted_mrs
-        self.patient_results['change_in_mrs_0_to_2'] = all_patients_outcomes_treated_0_to_2 - all_patients_outcomes_untreated_0_to_2
         self.patient_results['change_in_mrs_0_to_4'] = all_patients_outcomes_treated_0_to_4 - all_patients_outcomes_untreated_0_to_4
         # 'Improved outcome' is net improvement in mRS without an increase in mRS 5&6
         self.patient_results['improved_outcome'] = 1.0 * (
             (all_patients_outcomes_treated_weighted_mrs <= all_patients_outcomes_untreated_weighted_mrs) &
             (all_patients_outcomes_treated_0_to_4 >= all_patients_outcomes_untreated_0_to_4))
+        self.patient_results['change_in_utility'] = self.patient_results['treated_utility'] - self.patient_results['untreated_utility']
         
         # Delete outcome results for when infarction = 0
         mask = self.data['infarction'] == 0
@@ -280,3 +288,9 @@ class ThrombolysisChoiceOutcome():
         self.patient_results.loc[mask, 'change_in_weighted_mrs'] = np.nan
         self.patient_results.loc[mask, 'change_in_mrs_0_to_4'] = np.nan
         self.patient_results.loc[mask, 'improved_outcome'] = 0
+        self.patient_results.loc[mask, 'untreated_utility'] = np.nan
+        self.patient_results.loc[mask, 'treated_utility'] = np.nan
+        self.patient_results.loc[mask, 'change_in_utility'] = np.nan
+        for i in range(7):
+            self.patient_results.loc[mask, f'untreated_mrs_{i}'] = np.nan
+            self.patient_results.loc[mask, f'treated_mrs_{i}'] = np.nan
