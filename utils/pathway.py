@@ -9,15 +9,16 @@ class Pathway:
     """
     Stroke pathway simulation
     """
-    def __init__(self, base_case_data, benchmark_thrombolysis, trials=100):
-        # Store base case data    
+    def __init__(self, base_case_data, trials=100):
+        # Store base case data
         self.hospital_performance_original = base_case_data
 
         # Set number of trials
         self.trials = trials
 
-        # Store benchmark data
-        self.benchmark_thrombolysis = benchmark_thrombolysis
+        # Load benchmark data
+        self.benchmark_thrombolysis = pd.read_csv(
+            './output/thrombolysis_rates.csv', index_col=0)
 
 #       
     def model_ssnap_pathway_scenarios(self, hospital_performance):
@@ -391,7 +392,7 @@ class Pathway:
         hospital_performance = self.hospital_performance_original.copy()
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        benchmark_adjustment = hospital_performance['benchmark_decision'] / hospital_performance['thrombolysis']
         hospital_performance['eligable'] *= benchmark_adjustment
         # Get results
         results = self.model_ssnap_pathway_scenarios(hospital_performance)
@@ -442,7 +443,7 @@ class Pathway:
         # Merge in benchmark rates (to ensure order is correct)
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        benchmark_adjustment = hospital_performance['benchmark_decision'] / hospital_performance['thrombolysis']
         hospital_performance['eligable'] *= benchmark_adjustment
         # Get results
         results = self.model_ssnap_pathway_scenarios(hospital_performance)
@@ -469,7 +470,7 @@ class Pathway:
         # Merge in benchmark rates (to ensure order is correct)
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        benchmark_adjustment = hospital_performance['benchmark_decision'] / hospital_performance['thrombolysis']
         hospital_performance['eligable'] *= benchmark_adjustment
         # Get results
         results = self.model_ssnap_pathway_scenarios(hospital_performance)
@@ -495,7 +496,7 @@ class Pathway:
         # Merge in benchmark rates (to ensure order is correct)
         hospital_performance = hospital_performance.merge(
             self.benchmark_thrombolysis, left_on='stroke_team', right_index=True, how='left')
-        benchmark_adjustment = hospital_performance['benchmark'] / hospital_performance['observed']
+        benchmark_adjustment = hospital_performance['benchmark_decision'] / hospital_performance['thrombolysis']
         hospital_performance['eligable'] *= benchmark_adjustment
         # Speed
         hospital_performance['scan_within_4_hrs'] = 0.95
