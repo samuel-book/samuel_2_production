@@ -228,7 +228,7 @@ class ThrombolysisChoiceOutcome():
         X_train_one_hot.drop('stroke_team', axis=1, inplace=True)
 
         # Define and Fit model
-        self.outcome_model = XGBClassifier(verbosity=0, seed=42)
+        self.outcome_model = XGBClassifier(verbosity=0, seed=42, learning_rate=0.5)
         self.outcome_model.fit(X_train_one_hot, y_train)
 
         # Get AUC
