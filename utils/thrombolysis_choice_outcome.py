@@ -42,7 +42,7 @@ class ThrombolysisChoiceOutcome():
         
         self.outcome_y_field = 'discharge_disability'
 
-        self.number_of_benchmark_hospitals = 5
+        self.number_of_benchmark_hospitals = 25
 
         self.rerun_models = rerun_models
 
@@ -71,9 +71,21 @@ class ThrombolysisChoiceOutcome():
         self.patient_results = pd.read_csv('./output/thrombolysis_choice_results.csv', low_memory=False)
 
         # Average by stroke team
-        self.stroke_team_results = self.patient_results.groupby('stroke_team').mean()
-        self.stroke_team_results.drop('Unnamed: 0', axis=1, inplace=True)
-        self.stroke_team_results.to_csv('./output/thrombolysis_choice_results_by_stroke_team.csv')
+        results_by_team = self.patient_results.groupby('stroke_team').mean()
+        results_by_team.drop('Unnamed: 0', axis=1, inplace=True)
+
+        results_by_team['sensitivity'] = \
+            results_by_team['TP'] / (results_by_team['TP'] + results_by_team['FN'])
+        results_by_team['specificity'] = \
+            results_by_team['TN'] / (results_by_team['TN'] + results_by_team['FP'])
+        
+        # Add stroke team ranks for sensitivity and specificity
+        results_by_team['sensitivity_rank'] = results_by_team['sensitivity'].rank(ascending=False)
+        results_by_team['specificity_rank'] = results_by_team['specificity'].rank(ascending=False)
+        
+        # Store results by team
+        results_by_team.to_csv('./output/thrombolysis_outcome_predictions_by_team.csv')
+        self.stroke_team_results = results_by_team
 
         # Create separate table of observed and benchmark thrombolysis rates
         thrombolysis_rates = self.stroke_team_results[['thrombolysis', 'benchmark_decision', 'improved_outcome']]
@@ -185,8 +197,6 @@ class ThrombolysisChoiceOutcome():
         self.patient_results = pd.merge(
             self.patient_results, hospital_mean_shap, left_on='stroke_team', right_index=True, how='left')
         self.patient_results.drop('benchmark', axis=1, inplace=True)
-        # Sort by index
-        #self.patient_results.sort_index(inplace=True)
 
         # ************ Get benchmark decisions ************
         mask = hospital_mean_shap['benchmark'] == 1
@@ -275,10 +285,22 @@ class ThrombolysisChoiceOutcome():
         self.patient_results['change_in_mrs_0_to_4'] = all_patients_outcomes_treated_0_to_4 - all_patients_outcomes_untreated_0_to_4
         # 'Improved outcome' is net improvement in mRS without an increase in mRS 5&6
         self.patient_results['improved_outcome'] = 1.0 * (
-            (all_patients_outcomes_treated_weighted_mrs <= all_patients_outcomes_untreated_weighted_mrs) &
-            (all_patients_outcomes_treated_0_to_4 >= all_patients_outcomes_untreated_0_to_4))
+            (all_patients_outcomes_treated_weighted_mrs < all_patients_outcomes_untreated_weighted_mrs) &
+            (all_patients_outcomes_treated_0_to_4 > all_patients_outcomes_untreated_0_to_4))
         self.patient_results['change_in_utility'] = self.patient_results['treated_utility'] - self.patient_results['untreated_utility']
         
+        # Compare outcome with thrombolysis given
+        self.patient_results['thrombolysis_given_agrees_with_improved_outcome'] = 1.0 * (
+            self.patient_results['thrombolysis'] == self.patient_results['improved_outcome'])
+        self.patient_results['TP'] = 1.0 * (
+            (self.patient_results['thrombolysis'] == 1) & (self.patient_results['improved_outcome'] == 1))
+        self.patient_results['FP'] = 1.0 * (
+            (self.patient_results['thrombolysis'] == 1) & (self.patient_results['improved_outcome'] == 0))
+        self.patient_results['FN'] = 1.0 * (
+            (self.patient_results['thrombolysis'] == 0) & (self.patient_results['improved_outcome'] == 1))
+        self.patient_results['TN'] = 1.0 * (
+            (self.patient_results['thrombolysis'] == 0) & (self.patient_results['improved_outcome'] == 0))
+
         # Delete outcome results for when infarction = 0
         mask = self.data['infarction'] == 0
         self.patient_results.loc[mask, 'untreated_weighted_mrs'] = np.nan
@@ -294,3 +316,10 @@ class ThrombolysisChoiceOutcome():
         for i in range(7):
             self.patient_results.loc[mask, f'untreated_mrs_{i}'] = np.nan
             self.patient_results.loc[mask, f'treated_mrs_{i}'] = np.nan
+        self.patient_results.loc[mask, 'thrombolysis_given_agrees_with_improved_outcome'] = np.nan
+        self.patient_results.loc[mask,'TP'] = np.nan
+        self.patient_results.loc[mask,'FP'] = np.nan
+        self.patient_results.loc[mask,'FN'] = np.nan
+        self.patient_results.loc[mask,'TN'] = np.nan
+
+        
