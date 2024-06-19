@@ -226,7 +226,7 @@ class ThrombolysisChoiceOutcome():
         """
 
         # For training remove patients who have received thrombectomy or are not infarction
-        mask = (self.data['thrombectomy'] == 0) | (self.data['infarction'] == 0)
+        mask = (self.data['thrombectomy'] == 0) & (self.data['infarction'] == 1)
         train_data = self.data[mask]
         X_train = train_data[self.outcome_X_fields]
         y_train = train_data[self.outcome_y_field].values
@@ -261,7 +261,7 @@ class ThrombolysisChoiceOutcome():
         all_patients_outcomes_untreated = self.outcome_model.predict_proba(X_one_hot)
         all_patients_outcomes_untreated_weighted_mrs = \
             (all_patients_outcomes_untreated * np.arange(7)).sum(axis=1)
-        all_patients_outcomes_untreated_0_to_4 = all_patients_outcomes_untreated[:,0:5].sum(axis=1)
+        all_patients_outcomes_untreated_0_to_4 = all_patients_outcomes_untreated[: ,0:5].sum(axis=1)
         self.patient_results['untreated_weighted_mrs'] = 1.0 * all_patients_outcomes_untreated_weighted_mrs
         self.patient_results['untreated_0_to_4'] = 1.0 * all_patients_outcomes_untreated_0_to_4
         for i in range(7):

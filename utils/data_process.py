@@ -25,6 +25,7 @@ class DataProcess:
         # List fields for ML; some are created in `create_ml_data`
         self.machine_learning_fields = [
             'stroke_team',
+            'male',
             'year',
             'arrive_by_ambulance',
             'onset_to_arrival_time',
