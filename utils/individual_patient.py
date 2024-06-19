@@ -45,8 +45,8 @@ class IndividualPatientModel:
 
 
         self.data = pd.read_csv(
-            './data/data_for_ml/complete_ml_data.csv', low_memory=False)
-        
+            './data/data_for_ml/complete_ml_data.csv', low_memory=False)        
+ 
         # Set up one hot encoder
         self.stroke_teams = list(self.data['stroke_team'].unique())
         self.stroke_teams.sort()
@@ -61,19 +61,23 @@ class IndividualPatientModel:
 
         # Get stroke outcome data       
         outcome_data = self.data.copy()
+
+        # Only train outcome model when no thrombectomy given and for infarction patients
+        mask = (outcome_data['thrombectomy'] == 0) & (outcome_data['infarction'] == 1)
+        outcome_data = outcome_data[mask]
+
         # Restrict fields
         outcome_data = outcome_data[self.thrombolysis_outcome_fields]
-        # Remove patients with missing outcome data
-        mask = outcome_data['discharge_disability'].isna() == False
-        outcome_data = outcome_data[mask]
+
+        # Remove empty rows
+        outcome_data = outcome_data.dropna()
+
         # One hot encode stroke teams
         one_hot = enc.fit_transform(outcome_data[['stroke_team']]).toarray()
         one_hot = pd.DataFrame(one_hot, columns=self.stroke_teams)
         outcome_data = pd.concat([outcome_data, one_hot], axis=1)
         self.outcome_data = outcome_data.drop(columns=['stroke_team'])
-        self.outcome_data['discharge_disability'] = \
-            self.outcome_data['discharge_disability'].astype(int)
-        
+
         # Get benchmark data
         benchmark_data = pd.read_csv(
             './output/thrombolysis_choice_hospital_shap.csv')        
@@ -137,6 +141,14 @@ class IndividualPatientModel:
         v = self.change_in_less_3
         c1 = self.change_in_less_3_ci
         patient_text += f'\nChange in proportion mRS 0-2 due to IVT = {v:0.2f} ({c1:0.2f})'
+        if v > 0:
+            nnt = int(np.round(1/v, 0))
+            patient_text += '\nBenefit in mRS 0-2 due to IVT'
+            patient_text += f'\nNumber needed to treat (for additional mRS 0-2) = {nnt}'
+        else:
+            nnt = 0 - int(np.round(1/v, 0))
+            patient_text += '\nHarm in mRS 0-2 due to IVT'
+            patient_text += f'\nNumber needed to treat (for reduced mRS 0-2) = {nnt}'
 
         v = self.untreated_more_4
         c1 = self.untreated_more_4_ci
@@ -147,8 +159,16 @@ class IndividualPatientModel:
         v = self.change_in_more_4
         c1 = self.change_in_more_4_ci
         patient_text += f'\nChange in proportion mRS 5-6 due to IVT = {v:0.2f} ({c1:0.2f})'
+        if v < 0:
+            nnt = 0 - int(np.round(1/v, 0))
+            patient_text += '\nBenefit in mRS 5-6 due to IVT'
+            patient_text += f'\nNumber needed to treat (for avoided mRS 5-6) = {nnt}'
+        else:
+            nnt = int(np.round(1/v, 0))
+            patient_text += '\nHarm in mRS 5-6 due to IVT'
+            patient_text += f'\nNumber needed to treat (for additional mRS 5-6) = {nnt}'
 
-        ax.text(0.02, 1.07, patient_text, transform=ax.transAxes, fontsize=9,
+        ax.text(0.02, 1.07, patient_text, transform=ax.transAxes, fontsize=8,
                 verticalalignment='top')
 
         # Remove all axes
@@ -399,6 +419,10 @@ class IndividualPatientModel:
         for i in range(replicates):
             # Sample data
             sample = self.outcome_data.sample(frac=1.0, random_state=42+i, replace=True)
+
+            # remove any with y <0 or > 6
+            sample = sample[(sample['discharge_disability'] >= 0) & (sample['discharge_disability'] <= 6)]
+
             X = sample.drop(columns=['discharge_disability'])
             y = sample['discharge_disability'].values
             y = y.astype(int)

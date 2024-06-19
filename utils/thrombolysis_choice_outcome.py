@@ -225,7 +225,7 @@ class ThrombolysisChoiceOutcome():
         """
         """
 
-        # For training remove patients who have received thrombectomy or are not infarction
+        # For training remove patients who have received thrombectomy or who are haemorrhagic
         mask = (self.data['thrombectomy'] == 0) & (self.data['infarction'] == 1)
         train_data = self.data[mask]
         X_train = train_data[self.outcome_X_fields]
