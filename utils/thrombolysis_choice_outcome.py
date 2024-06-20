@@ -26,8 +26,7 @@ class ThrombolysisChoiceOutcome():
             'precise_onset_known',
             'prior_disability',
             'afib_anticoagulant',
-            'age',
-        ]
+            'age']
 
         self.thrombolysis_choice_y_field = 'thrombolysis'
 
@@ -168,16 +167,6 @@ class ThrombolysisChoiceOutcome():
         # Add total SHAP to SHAP results for each patient
         shap_values_df['total'] = shap_values_df.sum(axis=1)
 
-        # Add base value and reorder DataFrame to put base value first
-        cols = list(shap_values_df)
-        shap_values_df['base'] = shap_values_extended.base_values[0]
-        cols.insert(0, 'base')
-        shap_values_df = shap_values_df[cols]
-
-        # Add probability
-        odds = np.exp(shap_values_df['total'])
-        shap_values_df['probability'] = odds / (1 + odds)
-
         # Get average hospital SHAP values
         shap_values_df['stroke_team'] = X['stroke_team'].values
         hospital_mean_shap = pd.DataFrame()
@@ -283,10 +272,13 @@ class ThrombolysisChoiceOutcome():
         # Compare treated and untreated outcomes
         self.patient_results['change_in_weighted_mrs'] = all_patients_outcomes_treated_weighted_mrs - all_patients_outcomes_untreated_weighted_mrs
         self.patient_results['change_in_mrs_0_to_4'] = all_patients_outcomes_treated_0_to_4 - all_patients_outcomes_untreated_0_to_4
+        
         # 'Improved outcome' is net improvement in mRS without an increase in mRS 5&6
         self.patient_results['improved_outcome'] = 1.0 * (
             (all_patients_outcomes_treated_weighted_mrs < all_patients_outcomes_untreated_weighted_mrs) &
             (all_patients_outcomes_treated_0_to_4 > all_patients_outcomes_untreated_0_to_4))
+        
+        # Calculate change in utility
         self.patient_results['change_in_utility'] = self.patient_results['treated_utility'] - self.patient_results['untreated_utility']
         
         # Compare outcome with thrombolysis given
