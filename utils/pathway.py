@@ -307,7 +307,21 @@ class Pathway:
 
         fig = plt.figure(figsize=(10,7))
 
+        rows = ['base',
+             'onset',
+             'speed',
+             'benchmark',
+             'speed_onset',
+             'speed_benchmark',
+             'onset_benchmark',
+             'speed_onset_benchmark']
+        
+        # reorder rows to above
+        self.summary_sim_results = self.summary_sim_results.reindex(rows)
+
         x = list(self.summary_sim_results.index)
+
+
         # Replace all _ in x with + for plotting
         x = [i.replace('_', '+') for i in x]
 
