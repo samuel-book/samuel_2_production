@@ -19,16 +19,21 @@ class ArtificialPathwayData:
         # Load full data
         self.full_data = pd.read_csv(
                 './data/data_for_models.csv', low_memory=False)
+        
+        # Load rename_dict 
+        import pickle
+        with open('./data/artificial_ml_data/rename_dict.pkl', 'rb') as f:
+            self.rename_dict = pickle.load(f)
 
-        # Load stroke team rename dict and cobvert to dict for mapping
-        self.stroke_team_rename = pd.read_csv('./data/stroke_team_rename.csv')
-        self.stroke_team_rename = dict(zip(self.stroke_team_rename['old'], self.stroke_team_rename['new']))
+        # Limit data to stroke team in rename dict
+        self.full_data = self.full_data[self.full_data['stroke_team'].isin(self.rename_dict.keys())]
 
-        # Limit full data to stroke teams in rename dict
-        self.full_data = self.full_data[self.full_data['stroke_team'].isin(self.stroke_team_rename.keys())]
+        # Rename stroke teams
+        self.full_data['stroke_team'] = self.full_data['stroke_team'].map(self.rename_dict)
 
-        # Rename stroke team
-        self.full_data['stroke_team'] = self.full_data['stroke_team'].map(self.stroke_team_rename)
+        # Get stroke teams
+        self.stroke_teams = self.full_data['stroke_team'].unique()
+
     
     def create_artificial_pathway_data(self, patients_per_hospital=500):
         """
@@ -110,7 +115,7 @@ class ArtificialPathwayData:
         generated_data = generated_data.reset_index(drop=True)
 
         # Save
-        generated_data.to_csv('./data/artificial_patient_pathway_data.csv', index=False)
+        generated_data.to_csv('./data/artificial_ml_data/artificial_patient_pathway_data.csv', index=False)
 
     
 
